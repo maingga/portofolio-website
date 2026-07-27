@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - navigation "Main Navigation":
+    - text: Maingga Maingga Maingga
+    - button "Toggle Menu" [expanded]
+  - list:
+    - listitem:
+      - link "Hero":
+        - /url: "#hero"
+    - listitem:
+      - link "About":
+        - /url: "#about"
+    - listitem:
+      - link "Skills":
+        - /url: "#skills"
+    - listitem:
+      - link "Portfolio":
+        - /url: "#portfolio"
+    - listitem:
+      - link "Contact":
+        - /url: "#contact"
+- main:
+  - main:
+    - region "Hero Section":
+      - heading "Hi, I'm Ahmad Nana Maingga ⚡" [level=1]
+      - paragraph: We|
+      - paragraph: I craft modern and efficient web and mobile applications — with occasional integration of IoT and cloud technologies.
+      - paragraph: Open for freelance or remote projects ✉️
+      - text: Next.js Tailwind Laravel Flutter ESP32
+      - link "📄 Download CV":
+        - /url: /CV.pdf
+      - link "🚀 View Projects":
+        - /url: "#portfolio"
+      - img "Ahmad Nana Cyberpunk Profile"
+      - link "Scroll Down":
+        - /url: "#about"
+    - region "About Me Section":
+      - heading "👨‍💻 About Me" [level=2]
+      - paragraph: I'm Ahmad Nana Maingga, an Informatics Engineering student specializing in Web Development, Mobile App Development, and Internet of Things (IoT). I’m deeply committed to building clean, efficient, and well-tested software solutions.
+      - paragraph: I’ve worked on a variety of digital projects, including a sport center reservation system using a microservices architecture, a smart greenhouse monitoring and automation system based on ESP32, and several mobile apps built with Flutter and Firebase.
+      - paragraph: In some of these projects, I also applied Software Quality Assurance (SQA) practices, such as automated testing, API documentation, and version control with tools like Git and CI/CD pipelines.
+      - paragraph: My vision is to become a professional software engineer who not only masters technology but also delivers meaningful, measurable, and reliable digital solutions.
+    - region "Tech Stack Section":
+      - heading "Tech Stack" [level=2]
+      - paragraph: These are the technologies I specialize in for web, mobile, and IoT development.
+      - img "HTML technology logo and name":
+        - img "HTML logo"
+        - paragraph: HTML
+      - img "CSS technology logo and name":
+        - img "CSS logo"
+        - paragraph: CSS
+      - img "JavaScript technology logo and name":
+        - img "JavaScript logo"
+        - paragraph: JavaScript
+      - img "TypeScript technology logo and name":
+        - img "TypeScript logo"
+        - paragraph: TypeScript
+      - img "React technology logo and name":
+        - img "React logo"
+        - paragraph: React
+      - img "Next.js technology logo and name":
+        - img "Next.js logo"
+        - paragraph: Next.js
+      - img "Tailwind CSS technology logo and name":
+        - img "Tailwind CSS logo"
+        - paragraph: Tailwind CSS
+      - img "Laravel technology logo and name":
+        - img "Laravel logo"
+        - paragraph: Laravel
+      - img "Flutter technology logo and name":
+        - img "Flutter logo"
+        - paragraph: Flutter
+      - img "Firebase technology logo and name":
+        - img "Firebase logo"
+        - paragraph: Firebase
+      - img "MySQL technology logo and name":
+        - img "MySQL logo"
+        - paragraph: MySQL
+      - img "ESP32 technology logo and name":
+        - img "ESP32 logo"
+        - paragraph: ESP32
+    - text: Loading portfolio... Loading contact... Loading footer...
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+```

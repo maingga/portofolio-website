@@ -1,0 +1,141 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - navigation "Main Navigation":
+    - text: Maingga Maingga Maingga
+    - list:
+      - listitem:
+        - link "Hero":
+          - /url: "#hero"
+      - listitem:
+        - link "About":
+          - /url: "#about"
+      - listitem:
+        - link "Skills":
+          - /url: "#skills"
+      - listitem:
+        - link "Portfolio":
+          - /url: "#portfolio"
+      - listitem:
+        - link "Contact":
+          - /url: "#contact"
+- main:
+  - main:
+    - region "Hero Section":
+      - heading "Hi, I'm Ahmad Nana Maingga ⚡" [level=1]
+      - paragraph: Web|
+      - paragraph: I craft modern and efficient web and mobile applications — with occasional integration of IoT and cloud technologies.
+      - paragraph: Open for freelance or remote projects ✉️
+      - text: Next.js Tailwind Laravel Flutter ESP32
+      - link "📄 Download CV":
+        - /url: /CV.pdf
+      - link "🚀 View Projects":
+        - /url: "#portfolio"
+      - img "Ahmad Nana Cyberpunk Profile"
+      - link "Scroll Down":
+        - /url: "#about"
+    - region "About Me Section":
+      - heading "👨‍💻 About Me" [level=2]
+      - paragraph: I'm Ahmad Nana Maingga, an Informatics Engineering student specializing in Web Development, Mobile App Development, and Internet of Things (IoT). I’m deeply committed to building clean, efficient, and well-tested software solutions.
+      - paragraph: I’ve worked on a variety of digital projects, including a sport center reservation system using a microservices architecture, a smart greenhouse monitoring and automation system based on ESP32, and several mobile apps built with Flutter and Firebase.
+      - paragraph: In some of these projects, I also applied Software Quality Assurance (SQA) practices, such as automated testing, API documentation, and version control with tools like Git and CI/CD pipelines.
+      - paragraph: My vision is to become a professional software engineer who not only masters technology but also delivers meaningful, measurable, and reliable digital solutions.
+    - region "Tech Stack Section":
+      - heading "Tech Stack" [level=2]
+      - paragraph: These are the technologies I specialize in for web, mobile, and IoT development.
+      - img "HTML technology logo and name":
+        - img "HTML logo"
+        - paragraph: HTML
+      - img "CSS technology logo and name":
+        - img "CSS logo"
+        - paragraph: CSS
+      - img "JavaScript technology logo and name":
+        - img "JavaScript logo"
+        - paragraph: JavaScript
+      - img "TypeScript technology logo and name":
+        - img "TypeScript logo"
+        - paragraph: TypeScript
+      - img "React technology logo and name":
+        - img "React logo"
+        - paragraph: React
+      - img "Next.js technology logo and name":
+        - img "Next.js logo"
+        - paragraph: Next.js
+      - img "Tailwind CSS technology logo and name":
+        - img "Tailwind CSS logo"
+        - paragraph: Tailwind CSS
+      - img "Laravel technology logo and name":
+        - img "Laravel logo"
+        - paragraph: Laravel
+      - img "Flutter technology logo and name":
+        - img "Flutter logo"
+        - paragraph: Flutter
+      - img "Firebase technology logo and name":
+        - img "Firebase logo"
+        - paragraph: Firebase
+      - img "MySQL technology logo and name":
+        - img "MySQL logo"
+        - paragraph: MySQL
+      - img "ESP32 technology logo and name":
+        - img "ESP32 logo"
+        - paragraph: ESP32
+    - region "My project portfolio":
+      - heading "My Projects" [level=2]
+      - group:
+        - img "Screenshot dari Sport Center Reservation System"
+        - heading "Sport Center Reservation System" [level=3]
+        - paragraph: A web application for booking sports fields, featuring online reservations, payment integration, and user management.
+        - text: Laravel Next.js MySQL Midtrans
+        - link "GitHub repository dari Sport Center Reservation System":
+          - /url: https://github.com/ahmadnana/sport-center
+          - text: GitHub
+      - group:
+        - img "Screenshot dari Smart Greenhouse Automation"
+        - heading "Smart Greenhouse Automation" [level=3]
+        - paragraph: An ESP32-based automated monitoring system with a real-time dashboard to control temperature, humidity, and lighting conditions.
+        - text: ESP32 DHT11 LDR Blynk Telegram
+        - link "GitHub repository dari Smart Greenhouse Automation":
+          - /url: https://github.com/ahmadnana/smart-greenhouse
+          - text: GitHub
+      - group:
+        - img "Screenshot dari Wedding Equipment Rental App"
+        - heading "Wedding Equipment Rental App" [level=3]
+        - paragraph: A modern mobile app for managing wedding equipment rentals, built using Flutter with real-time authentication and backend powered by Firebase.
+        - text: Flutter Firebase Cloud Firestore
+        - link "GitHub repository dari Wedding Equipment Rental App":
+          - /url: https://github.com/ahmadnana/portfolio
+          - text: GitHub
+    - heading "📬 Contact Me" [level=2]
+    - textbox "Your Name"
+    - textbox "Your Email"
+    - textbox "Your Message"
+    - button "Send Message"
+    - paragraph: 📍 Kediri, Indonesia
+    - paragraph:
+      - text: 📞
+      - link "+62 877-5453-2633":
+        - /url: tel:+6287754532633
+    - paragraph:
+      - text: 📧
+      - link "nanamaingga12@gmail.com":
+        - /url: mailto:nanamaingga12@gmail.com
+    - link "LinkedIn":
+      - /url: https://linkedin.com/in/ahmad-nana-maingga-b4a82021b
+    - link "TwitterX":
+      - /url: https://x.com/MainggaF
+    - link "Facebook":
+      - /url: https://facebook.com/ga.nyonk.3
+    - link "Instagram":
+      - /url: https://instagram.com/maingga_
+    - paragraph: © 2025 Ahmad Nana Maingga. All rights reserved.
+    - link "GitHub":
+      - /url: https://github.com/maingga
+    - link "LinkedIn":
+      - /url: https://linkedin.com/in/ahmad-nana-maingga-b4a82021b
+    - link "Email":
+      - /url: mailto:nanamaingga12@gmail.com
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+```

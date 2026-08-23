@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Github, Linkedin, Mail } from "lucide-react";
 
-const Footer = () => {
-  const year = useMemo(() => new Date().getFullYear(), []);
+const currentYear = new Date().getFullYear();
 
+const Footer = () => {
   return (
     <motion.footer
       initial={{ opacity: 0, y: 30 }}
@@ -18,9 +17,9 @@ const Footer = () => {
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
         {/* Left: Nama & Tahun */}
         <p className="text-center md:text-left font-mono text-emerald-400">
-          © {year}{" "}
+          © {currentYear}{" "}
           <span
-            className="font-semibold tracking-wide"
+            className="font-semibold tracking-wide font-audiowide"
             style={{ fontFamily: "var(--font-audiowide)" }}
           >
             Ahmad Nana Maingga
@@ -34,8 +33,8 @@ const Footer = () => {
             href="https://github.com/maingga"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="GitHub"
-            className="hover:text-emerald-400 transition"
+            aria-label="GitHub Profile"
+            className="hover:text-emerald-400 transition-colors"
           >
             <Github size={20} />
           </a>
@@ -43,15 +42,15 @@ const Footer = () => {
             href="https://linkedin.com/in/ahmad-nana-maingga-b4a82021b"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="LinkedIn"
-            className="hover:text-emerald-400 transition"
+            aria-label="LinkedIn Profile"
+            className="hover:text-emerald-400 transition-colors"
           >
             <Linkedin size={20} />
           </a>
           <a
             href="mailto:nanamaingga12@gmail.com"
-            aria-label="Email"
-            className="hover:text-emerald-400 transition"
+            aria-label="Send Email"
+            className="hover:text-emerald-400 transition-colors"
           >
             <Mail size={20} />
           </a>

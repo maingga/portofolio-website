@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Linkedin, Facebook, Instagram, X as TwitterX } from "lucide-react";
 
@@ -14,39 +14,35 @@ export default function Contact() {
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    },
-    [],
-  );
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setErrorMsg("");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
 
-      if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-        setErrorMsg("Please fill in all fields.");
-        return;
-      }
-      if (!isValidEmail(form.email)) {
-        setErrorMsg("Please enter a valid email address.");
-        return;
-      }
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      setErrorMsg("Please fill in all fields.");
+      return;
+    }
+    if (!isValidEmail(form.email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
 
-      setStatus("loading");
+    setStatus("loading");
 
-      try {
-        await new Promise((res) => setTimeout(res, 1500));
-        setStatus("success");
-        setForm({ name: "", email: "", message: "" });
-      } catch {
-        setStatus("error");
-      }
-    },
-    [form],
-  );
+    try {
+      await new Promise((res) => setTimeout(res, 1500));
+      setStatus("success");
+      setForm({ name: "", email: "", message: "" });
+    } catch {
+      setStatus("error");
+    }
+  };
 
   return (
     <motion.section
@@ -54,6 +50,7 @@ export default function Contact() {
       className="max-w-3xl mx-auto px-6 py-16 text-green-300"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-3xl md:text-4xl font-extrabold text-center text-green-400 mb-10 glow-green">
@@ -61,42 +58,62 @@ export default function Contact() {
       </h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-        <input
-          type="text"
-          name="name"
-          placeholder="Your Name"
-          value={form.name}
-          onChange={handleChange}
-          className="bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Your Email"
-          value={form.email}
-          onChange={handleChange}
-          className="bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
-          required
-        />
-        <textarea
-          name="message"
-          placeholder="Your Message"
-          rows={5}
-          value={form.message}
-          onChange={handleChange}
-          className="bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none placeholder:text-green-500/60"
-          required
-        />
+        <div>
+          <label htmlFor="name" className="sr-only">
+            Your Name
+          </label>
+          <input
+            id="name"
+            type="text"
+            name="name"
+            placeholder="Your Name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="email" className="sr-only">
+            Your Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="Your Email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="message" className="sr-only">
+            Your Message
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            placeholder="Your Message"
+            rows={5}
+            value={form.message}
+            onChange={handleChange}
+            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none placeholder:text-green-500/60"
+            required
+          />
+        </div>
 
         {errorMsg && (
-          <p className="text-red-500 text-sm mt-[-0.5rem]">{errorMsg}</p>
+          <p className="text-red-500 text-sm mt-[-0.25rem]">{errorMsg}</p>
         )}
 
         <button
           type="submit"
           disabled={status === "loading"}
-          className={`bg-green-700 text-white font-semibold py-3 rounded-md hover:bg-green-600 transition-colors shadow-md backdrop-blur ${
+          className={`bg-green-700 text-white font-semibold py-3 rounded-md hover:bg-green-600 transition-colors shadow-md ${
             status === "loading" ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
@@ -141,8 +158,8 @@ export default function Contact() {
         <a
           href="https://linkedin.com/in/ahmad-nana-maingga-b4a82021b"
           target="_blank"
-          rel="noreferrer"
-          aria-label="LinkedIn"
+          rel="noopener noreferrer"
+          aria-label="LinkedIn Profile"
           className="hover:text-lime-300 transition"
         >
           <Linkedin className="w-6 h-6" />
@@ -150,8 +167,8 @@ export default function Contact() {
         <a
           href="https://x.com/MainggaF"
           target="_blank"
-          rel="noreferrer"
-          aria-label="TwitterX"
+          rel="noopener noreferrer"
+          aria-label="X (Twitter) Profile"
           className="hover:text-lime-300 transition"
         >
           <TwitterX className="w-6 h-6" />
@@ -159,8 +176,8 @@ export default function Contact() {
         <a
           href="https://facebook.com/ga.nyonk.3"
           target="_blank"
-          rel="noreferrer"
-          aria-label="Facebook"
+          rel="noopener noreferrer"
+          aria-label="Facebook Profile"
           className="hover:text-lime-300 transition"
         >
           <Facebook className="w-6 h-6" />
@@ -168,15 +185,15 @@ export default function Contact() {
         <a
           href="https://instagram.com/maingga_"
           target="_blank"
-          rel="noreferrer"
-          aria-label="Instagram"
+          rel="noopener noreferrer"
+          aria-label="Instagram Profile"
           className="hover:text-lime-300 transition"
         >
           <Instagram className="w-6 h-6" />
         </a>
       </div>
 
-      <div className="mt-10 h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent animate-pulse" />
+      <div className="mt-10 h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-75" />
     </motion.section>
   );
 }

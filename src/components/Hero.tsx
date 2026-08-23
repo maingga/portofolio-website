@@ -137,7 +137,6 @@ const Hero = () => {
           <a
             href={CONFIG.CV_PATH}
             download={CONFIG.CV_FILENAME}
-            target="_blank"
             rel="noopener noreferrer"
             aria-label="Download CV Ahmad Nana Maingga (PDF)"
             className="inline-block px-6 py-3 bg-[#101c10] border border-green-700 text-green-300 font-semibold rounded-md hover:bg-green-800/30 transition duration-200 shadow-md text-center"

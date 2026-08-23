@@ -3,51 +3,74 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
-const roles = [
+// 1. CONSTANTS (Sesuai standar Single Source of Truth)
+const ROLES: readonly string[] = [
   "Web Developer",
   "Mobile Developer",
   "IoT Developer",
   "Tech Explorer",
 ];
 
+const TECH_STACK: readonly string[] = [
+  "Next.js",
+  "Tailwind",
+  "Laravel",
+  "Flutter",
+  "ESP32",
+];
+
+const CONFIG = {
+  CV_PATH: "/CV.pdf",
+  CV_FILENAME: "CV_Ahmad_Nana_Maingga.pdf",
+  TYPING_SPEED_FORWARD: 120,
+  TYPING_SPEED_BACKWARD: 50,
+  TYPING_PAUSE_MS: 1200,
+  FLIP_INTERVAL_MS: 5000,
+} as const;
+
 const Hero = () => {
-  const [index, setIndex] = useState(0);
-  const [subIndex, setSubIndex] = useState(0);
-  const [reverse, setReverse] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [index, setIndex] = useState<number>(0);
+  const [subIndex, setSubIndex] = useState<number>(0);
+  const [reverse, setReverse] = useState<boolean>(false);
+  const [isFlipped, setIsFlipped] = useState<boolean>(false);
+  
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Typing Effect Optimization
+  // 2. TYPING EFFECT LOGIC (Dibersihkan dari Race Conditions)
   useEffect(() => {
-    if (index === roles.length) return;
+    if (index >= ROLES.length) return;
 
-    timeoutRef.current = setTimeout(
-      () => {
+    const currentRole = ROLES[index];
+    const isEndOfWord = !reverse && subIndex === currentRole.length;
+    const isStartOfWord = reverse && subIndex === 0;
+
+    const delay = reverse
+      ? CONFIG.TYPING_SPEED_BACKWARD
+      : CONFIG.TYPING_SPEED_FORWARD;
+
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isEndOfWord) {
+        setTimeout(() => setReverse(true), CONFIG.TYPING_PAUSE_MS);
+      } else if (isStartOfWord) {
+        setReverse(false);
+        setIndex((prev) => (prev + 1) % ROLES.length);
+      } else {
         setSubIndex((prev) => (reverse ? prev - 1 : prev + 1));
-
-        if (!reverse && subIndex === roles[index].length) {
-          setTimeout(() => setReverse(true), 1200);
-        } else if (reverse && subIndex === 0) {
-          setReverse(false);
-          setIndex((prev) => (prev + 1) % roles.length);
-        }
-      },
-      reverse ? 50 : 120
-    );
+      }
+    }, delay);
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [subIndex, index, reverse]);
 
-  // Flip Automatic Effect
+  // 3. FLIP EFFECT LOGIC
   useEffect(() => {
     const flipInterval = setInterval(() => {
       setIsFlipped((prev) => !prev);
-    }, 5000);
+    }, CONFIG.FLIP_INTERVAL_MS);
 
     return () => clearInterval(flipInterval);
   }, []);
@@ -61,7 +84,7 @@ const Hero = () => {
       {/* Decorative background grid */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_1px_1px,_#22c55e10_1px,_transparent_0)] [background-size:16px_16px] pointer-events-none" />
 
-      {/* Left Column: Text */}
+      {/* Left Column: Content */}
       <motion.div
         className="flex-1 text-center md:text-left space-y-6 relative z-10"
         initial={{ opacity: 0, y: 20 }}
@@ -79,11 +102,11 @@ const Hero = () => {
           ⚡
         </h1>
 
-        {/* Dynamic Typing Display with fixed width/height container to prevent CLS */}
-        <div className="h-8 flex items-center justify-center md:justify-start">
+        {/* Dynamic Typing Display */}
+        <div className="h-8 flex items-center justify-center md:justify-start" aria-live="polite">
           <p className="text-lime-400 text-xl md:text-2xl font-mono">
-            {roles[index].substring(0, subIndex)}
-            <span className="animate-pulse">|</span>
+            {ROLES[index]?.substring(0, subIndex)}
+            <span className="animate-pulse" aria-hidden="true">|</span>
           </p>
         </div>
 
@@ -96,31 +119,35 @@ const Hero = () => {
           Open for freelance or remote projects ✉️
         </p>
 
+        {/* Tech Stack List */}
         <div className="flex flex-wrap gap-2 justify-center md:justify-start text-xs font-mono uppercase mt-4">
-          {["Next.js", "Tailwind", "Laravel", "Flutter", "ESP32"].map(
-            (tech) => (
-              <span
-                key={tech}
-                className="border border-green-400/50 text-green-300 px-2 py-1 rounded-md bg-green-800/10"
-              >
-                {tech}
-              </span>
-            )
-          )}
+          {TECH_STACK.map((tech) => (
+            <span
+              key={tech}
+              className="border border-green-400/50 text-green-300 px-2 py-1 rounded-md bg-green-800/10"
+            >
+              {tech}
+            </span>
+          ))}
         </div>
 
+        {/* Call To Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start mt-6">
-          <Link
-            href="/CV.pdf"
-            download
-            className="inline-block px-6 py-3 bg-[#101c10] border border-green-700 text-green-300 font-semibold rounded-md hover:bg-green-800/30 transition duration-200 shadow-md"
+          {/* PERBAIKAN SQA: Native Anchor untuk Download Payload */}
+          <a
+            href={CONFIG.CV_PATH}
+            download={CONFIG.CV_FILENAME}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Download CV Ahmad Nana Maingga (PDF)"
+            className="inline-block px-6 py-3 bg-[#101c10] border border-green-700 text-green-300 font-semibold rounded-md hover:bg-green-800/30 transition duration-200 shadow-md text-center"
           >
             📄 Download CV
-          </Link>
+          </a>
 
           <a
             href="#portfolio"
-            className="inline-block px-6 py-3 border border-green-700 text-green-300 rounded-md hover:bg-green-800/20 transition duration-200 shadow-md"
+            className="inline-block px-6 py-3 border border-green-700 text-green-300 rounded-md hover:bg-green-800/20 transition duration-200 shadow-md text-center"
           >
             🚀 View Projects
           </a>
@@ -141,7 +168,7 @@ const Hero = () => {
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
-              {/* SISI DEPAN: Cyberpunk Avatar (Di-priority) */}
+              {/* SISI DEPAN */}
               <div className="absolute inset-0 rounded-full [backface-visibility:hidden] overflow-hidden border-4 border-green-500 shadow-lg">
                 <Image
                   src="/profile.png"
@@ -153,16 +180,17 @@ const Hero = () => {
                 />
               </div>
 
-              {/* SISI BELAKANG: Real Profile (Tanpa priority / lazy loading) */}
-              <div className="absolute inset-0 rounded-full [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden border-4 border-green-600 shadow-lg">
-                <Image
-                  src="/profile-real.png"
-                  alt="Ahmad Nana Real Profile"
-                  fill
-                  sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
-                  className="object-cover"
-                />
-              </div>
+            {/* SISI BELAKANG: Real Profile */}
+            <div className="absolute inset-0 rounded-full [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden border-4 border-green-600 shadow-lg">
+              <Image
+                src="/profile-real.png"
+                alt="Ahmad Nana Real Profile"
+                fill
+                sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
+                priority // <-- Tambahkan atribut ini di sini
+                className="object-cover"
+              />
+            </div>              
             </motion.div>
           </div>
 
@@ -174,7 +202,7 @@ const Hero = () => {
 
       {/* Scroll indicator */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        <a href="#about" aria-label="Scroll Down">
+        <a href="#about" aria-label="Scroll Down to About section">
           <ChevronDown className="text-green-500" size={32} />
         </a>
       </div>

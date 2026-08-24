@@ -34,7 +34,7 @@ const PROJECTS: ProjectCardProps[] = [
   },
 ];
 
-// Konfigurasi posisi deck untuk Desktop
+// Konfigurasi posisi deck untuk Desktop (dibuat konstanta di luar komponen)
 const DECK_CONFIG = [
   {
     stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
@@ -111,7 +111,8 @@ export default function Portfolio() {
           </span>
           <h2
             id="portfolio-heading"
-            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300"
+            /* Ditambahkan py-1 dan leading-normal agar huruf 'y' tidak terpotong oleh efek bg-clip-text */
+            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300 py-1 leading-normal sm:leading-tight"
           >
             My Projects
           </h2>
@@ -122,7 +123,7 @@ export default function Portfolio() {
         </motion.div>
 
         {/* ======================================================== */}
-        {/* 1. MOBILE VIEW: INTERACTIVE SWIPEABLE STACK              */}
+        {/* 1. MOBILE VIEW: INTERACTIVE SWIPEABLE STACK             */}
         {/* ======================================================== */}
         <div className="flex sm:hidden flex-col items-center w-full">
           <div className="relative w-full max-w-[310px] h-[460px] flex justify-center items-center select-none">
@@ -177,7 +178,7 @@ export default function Portfolio() {
         </div>
 
         {/* ======================================================== */}
-        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK                  */}
+        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK                 */}
         {/* ======================================================== */}
         <div
           className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center select-none"

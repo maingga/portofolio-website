@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import ProjectCard, { ProjectCardProps } from "./ProjectCard";
 
@@ -34,32 +34,25 @@ const PROJECTS: ProjectCardProps[] = [
   },
 ];
 
-// Static deck position configurations to prevent re-declarations on re-render
+// Konfigurasi posisi deck untuk Desktop
 const DECK_CONFIG = [
   {
-    stacked: { x: "-6%", y: 0, rotate: -5, scale: 0.96, zIndex: 1 },
-    spread: { x: "-102%", y: 8, rotate: -4, scale: 1, zIndex: 1 },
+    stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
+    spread: { x: "-102%", y: 6, rotate: -3, scale: 1, zIndex: 1 },
   },
   {
-    stacked: { x: "0%", y: -8, rotate: 0, scale: 1, zIndex: 3 },
-    spread: { x: "0%", y: -12, rotate: 0, scale: 1.02, zIndex: 3 },
+    stacked: { x: "0%", y: -6, rotate: 0, scale: 1, zIndex: 3 },
+    spread: { x: "0%", y: -10, rotate: 0, scale: 1.02, zIndex: 3 },
   },
   {
-    stacked: { x: "6%", y: 4, rotate: 5, scale: 0.96, zIndex: 2 },
-    spread: { x: "102%", y: 8, rotate: 4, scale: 1, zIndex: 2 },
+    stacked: { x: "4%", y: 4, rotate: 4, scale: 0.96, zIndex: 2 },
+    spread: { x: "102%", y: 6, rotate: 3, scale: 1, zIndex: 2 },
   },
 ] as const;
 
 export default function Portfolio() {
-  const [isHovered, setIsHovered] = useState(false);
-  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
-
-  // Optimized event handlers using useCallback
-  const handleMouseEnterContainer = useCallback(() => setIsHovered(true), []);
-  const handleMouseLeaveContainer = useCallback(() => {
-    setIsHovered(false);
-    setActiveCardIndex(null);
-  }, []);
+  const [isSpread, setIsSpread] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(0);
 
   const memoizedProjects = useMemo(() => PROJECTS, []);
 
@@ -69,13 +62,13 @@ export default function Portfolio() {
       className="min-h-screen px-4 sm:px-6 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
       aria-labelledby="portfolio-heading"
     >
-      {/* Static Background Glow (GPU Optimized via transform) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu" />
+      {/* Background Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu" />
 
       <div className="max-w-6xl w-full mx-auto relative z-10 flex flex-col items-center">
         {/* Header Section */}
         <motion.div
-          className="text-center mb-16 max-w-xl"
+          className="text-center mb-12 max-w-xl px-2"
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
@@ -90,25 +83,46 @@ export default function Portfolio() {
           >
             My Projects
           </h2>
-          <p className="text-emerald-200/60 text-sm mt-3">
-            Hover over or touch the card stack to explore the projects.
+          <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
+            <span className="block sm:hidden">Swipe or scroll horizontally to explore projects.</span>
+            <span className="hidden sm:inline">Hover over or click the card stack to explore the projects.</span>
           </p>
         </motion.div>
 
-        {/* INTERACTIVE DECK CONTAINER */}
+        {/* ======================================================== */}
+        {/* 1. MOBILE VIEW: CAROUSEL / HORIZONTAL SCROLL (Hidden on Desktop) */}
+        {/* ======================================================== */}
+        <div className="flex sm:hidden w-full overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 pb-6 pt-2 px-2">
+          {memoizedProjects.map((project) => (
+            <div
+              key={`mobile-${project.title}`}
+              className="min-w-[285px] max-w-[310px] w-full snap-center flex-shrink-0"
+            >
+              <ProjectCard {...project} />
+            </div>
+          ))}
+        </div>
+
+        {/* ======================================================== */}
+        {/* 2. DESKTOP VIEW: INTERACTIVE CARD DECK (Hidden on Mobile) */}
+        {/* ======================================================== */}
         <div
-          className="relative w-full max-w-[340px] sm:max-w-[380px] h-[490px] flex justify-center items-center cursor-pointer"
-          onMouseEnter={handleMouseEnterContainer}
-          onMouseLeave={handleMouseLeaveContainer}
+          className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center cursor-pointer select-none"
+          onMouseEnter={() => setIsSpread(true)}
+          onMouseLeave={() => {
+            setIsSpread(false);
+            setActiveCardIndex(null);
+          }}
+          onClick={() => setIsSpread((prev) => !prev)}
         >
           {memoizedProjects.map((project, index) => {
             const config = DECK_CONFIG[index];
             const isCardActive = activeCardIndex === index;
-            const targetPos = isHovered ? config.spread : config.stacked;
+            const targetPos = isSpread ? config.spread : config.stacked;
 
             return (
               <motion.div
-                key={project.title}
+                key={`desktop-${project.title}`}
                 className="absolute top-0 w-full will-change-transform"
                 onMouseEnter={() => setActiveCardIndex(index)}
                 animate={{

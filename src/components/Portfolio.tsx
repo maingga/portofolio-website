@@ -38,20 +38,20 @@ const PROJECTS: ProjectCardProps[] = [
 const DECK_CONFIG = [
   {
     stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
-    spread: { x: "-102%", y: 6, rotate: -3, scale: 1, zIndex: 1 },
+    spread: { x: "-104%", y: 4, rotate: -3, scale: 1, zIndex: 1 },
   },
   {
     stacked: { x: "0%", y: -6, rotate: 0, scale: 1, zIndex: 3 },
-    spread: { x: "0%", y: -10, rotate: 0, scale: 1.02, zIndex: 3 },
+    spread: { x: "0%", y: -12, rotate: 0, scale: 1.03, zIndex: 3 },
   },
   {
     stacked: { x: "4%", y: 4, rotate: 4, scale: 0.96, zIndex: 2 },
-    spread: { x: "102%", y: 6, rotate: 3, scale: 1, zIndex: 2 },
+    spread: { x: "104%", y: 4, rotate: 3, scale: 1, zIndex: 2 },
   },
 ] as const;
 
 export default function Portfolio() {
-  // Desktop States
+  // Desktop States (Auto-Hover)
   const [isSpread, setIsSpread] = useState(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
 
@@ -101,7 +101,7 @@ export default function Portfolio() {
           </h2>
           <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
             <span className="block sm:hidden">Swipe the card left or right to explore.</span>
-            <span className="hidden sm:inline">Click the card stack to spread and explore the projects.</span>
+            <span className="hidden sm:inline">Hover over the card stack to explore the projects.</span>
           </p>
         </motion.div>
 
@@ -159,14 +159,11 @@ export default function Portfolio() {
         </div>
 
         {/* ======================================================== */}
-        {/* 2. DESKTOP VIEW: INTERACTIVE SPREAD DECK (Hidden on Mobile) */}
+        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK (Hidden on Mobile) */}
         {/* ======================================================== */}
         <div
-          className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center cursor-pointer select-none"
-          onClick={() => {
-            setIsSpread((prev) => !prev);
-            if (isSpread) setActiveCardIndex(null);
-          }}
+          className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center select-none"
+          onMouseEnter={() => setIsSpread(true)}
           onMouseLeave={() => {
             setIsSpread(false);
             setActiveCardIndex(null);
@@ -180,33 +177,21 @@ export default function Portfolio() {
             return (
               <motion.div
                 key={`desktop-${project.title}`}
-                className="absolute top-0 w-full will-change-transform"
-                onMouseEnter={() => {
-                  if (isSpread) setActiveCardIndex(index);
-                }}
-                onMouseLeave={() => {
-                  if (isSpread) setActiveCardIndex(null);
-                }}
-                onClick={(e) => {
-                  // Mencegah event klik bubbling ke parent jika ingin interaksi spesifik di kartu
-                  e.stopPropagation();
-                  if (!isSpread) {
-                    setIsSpread(true);
-                  }
-                  setActiveCardIndex(index);
-                }}
+                className="absolute top-0 w-full will-change-transform cursor-pointer"
+                onMouseEnter={() => setActiveCardIndex(index)}
+                onMouseLeave={() => setActiveCardIndex(null)}
                 animate={{
                   x: targetPos.x,
                   y: targetPos.y,
                   rotate: isCardActive && isSpread ? 0 : targetPos.rotate,
-                  scale: isCardActive && isSpread ? 1.05 : targetPos.scale,
+                  scale: isCardActive && isSpread ? 1.06 : targetPos.scale,
                   zIndex: isCardActive && isSpread ? 20 : targetPos.zIndex,
                 }}
                 transition={{
                   type: "spring",
-                  stiffness: 180,
-                  damping: 22,
-                  mass: 0.8,
+                  stiffness: 220,
+                  damping: 20,
+                  mass: 0.7,
                 }}
               >
                 <ProjectCard {...project} />

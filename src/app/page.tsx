@@ -36,7 +36,8 @@ export default function HomePage() {
       <section id="skills">
         <Skills />
       </section>
-      <section id="portfolio">
+      {/* ID disamakan dengan Navbar menjadi "projects" */}
+      <section id="projects">
         <Portfolio />
       </section>
       <section id="contact">

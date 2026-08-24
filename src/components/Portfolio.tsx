@@ -109,11 +109,11 @@ export default function Portfolio() {
           </span>
           <h2
             id="portfolio-heading"
-            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300"
+            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300 pb-2 leading-relaxed"
           >
             My Projects
           </h2>
-          <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
+          <p className="text-emerald-200/60 text-xs sm:text-sm mt-1">
             <span className="block sm:hidden">Swipe left/right or tap dots to explore.</span>
             <span className="hidden sm:inline">Hover over the card stack to explore the projects.</span>
           </p>

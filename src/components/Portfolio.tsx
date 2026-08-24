@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProjectCard, { ProjectCardProps } from "./ProjectCard";
 
@@ -38,7 +38,7 @@ const PROJECTS: ProjectCardProps[] = [
 const DECK_CONFIG = [
   {
     stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
-    spread: { x: "-108%", y: 4, rotate: -3, scale: 1, zIndex: 1 },
+    spread: { x: "-104%", y: 4, rotate: -3, scale: 1, zIndex: 1 },
   },
   {
     stacked: { x: "0%", y: -6, rotate: 0, scale: 1, zIndex: 3 },
@@ -46,12 +46,12 @@ const DECK_CONFIG = [
   },
   {
     stacked: { x: "4%", y: 4, rotate: 4, scale: 0.96, zIndex: 2 },
-    spread: { x: "108%", y: 4, rotate: 3, scale: 1, zIndex: 2 },
+    spread: { x: "104%", y: 4, rotate: 3, scale: 1, zIndex: 2 },
   },
 ] as const;
 
 export default function Portfolio() {
-  // Desktop States (Auto-Hover / Focus)
+  // Desktop States (Auto-Hover)
   const [isSpread, setIsSpread] = useState(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
 
@@ -86,10 +86,12 @@ export default function Portfolio() {
     setMobileIndex(targetIndex);
   }, [mobileIndex]);
 
+  const memoizedProjects = useMemo(() => PROJECTS, []);
+
   return (
     <section
       id="portfolio"
-      className="min-h-screen px-6 sm:px-16 lg:px-24 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
+      className="min-h-screen px-4 sm:px-6 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
       aria-labelledby="portfolio-heading"
     >
       {/* Background Glow */}
@@ -109,11 +111,11 @@ export default function Portfolio() {
           </span>
           <h2
             id="portfolio-heading"
-            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300 pb-2 leading-relaxed"
+            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300"
           >
             My Projects
           </h2>
-          <p className="text-emerald-200/60 text-xs sm:text-sm mt-1">
+          <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
             <span className="block sm:hidden">Swipe left/right or tap dots to explore.</span>
             <span className="hidden sm:inline">Hover over the card stack to explore the projects.</span>
           </p>
@@ -130,7 +132,7 @@ export default function Portfolio() {
 
                 return (
                   <motion.div
-                    key={`mobile-${project.title}-${index}`}
+                    key={`mobile-${project.title}`}
                     className="absolute top-0 w-full cursor-grab active:cursor-grabbing touch-none will-change-transform"
                     style={{ zIndex: mobileCards.length - index }}
                     drag={isTopCard ? "x" : false}
@@ -184,13 +186,8 @@ export default function Portfolio() {
             setIsSpread(false);
             setActiveCardIndex(null);
           }}
-          onFocus={() => setIsSpread(true)}
-          onBlur={() => {
-            setIsSpread(false);
-            setActiveCardIndex(null);
-          }}
         >
-          {PROJECTS.map((project, index) => {
+          {memoizedProjects.map((project, index) => {
             const config = DECK_CONFIG[index];
             const isCardActive = activeCardIndex === index;
             const targetPos = isSpread ? config.spread : config.stacked;
@@ -198,14 +195,9 @@ export default function Portfolio() {
             return (
               <motion.div
                 key={`desktop-${project.title}`}
-                className="absolute top-0 w-full will-change-transform cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-xl"
-                tabIndex={0}
+                className="absolute top-0 w-full will-change-transform cursor-pointer"
                 onMouseEnter={() => setActiveCardIndex(index)}
                 onMouseLeave={() => setActiveCardIndex(null)}
-                onFocus={() => {
-                  setIsSpread(true);
-                  setActiveCardIndex(index);
-                }}
                 animate={{
                   x: targetPos.x,
                   y: targetPos.y,

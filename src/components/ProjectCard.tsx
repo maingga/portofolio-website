@@ -1,12 +1,11 @@
 "use client";
 
-import { memo } from "react";
-import { motion } from "framer-motion";
+import { memo, useId } from "react";
 import Image from "next/image";
 import TechBadge from "./TechBadge";
 import { Github, ExternalLink } from "lucide-react";
 
-type ProjectCardProps = {
+export type ProjectCardProps = {
   title: string;
   description: string;
   image: string;
@@ -14,6 +13,10 @@ type ProjectCardProps = {
   github: string;
   demo?: string;
 };
+
+// 1x1 pixel SVG blur placeholder (Ultra lightweight for LCP performance)
+const DEFAULT_BLUR_DATA =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='%0a1a0a'/%3E%3C/svg%3E";
 
 const ProjectCard = ({
   title,
@@ -23,70 +26,87 @@ const ProjectCard = ({
   github,
   demo,
 }: ProjectCardProps) => {
-  // Buat ID yang valid untuk HTML (bebas spasi)
-  const titleId = `project-title-${title.toLowerCase().replace(/\s+/g, "-")}`;
+  const titleId = useId();
+  const hasDemo = Boolean(demo?.trim());
 
   return (
-    <motion.div
-      className="bg-[#0a1a0a] dark:bg-[#062106] rounded-xl shadow-[0_0_10px_#15803d66] hover:shadow-[0_0_15px_#22c55eaa] transition-shadow overflow-hidden flex flex-col border border-green-900/30"
-      whileHover={{ scale: 1.015 }}
-      whileTap={{ scale: 0.985 }}
-      role="region"
+    <article
       aria-labelledby={titleId}
+      className="bg-[#0b1b0e]/90 backdrop-blur-md rounded-2xl border border-emerald-500/20 hover:border-emerald-400/60 shadow-xl shadow-black/60 overflow-hidden flex flex-col h-[470px] select-none transition-colors duration-300 group"
     >
-      <div className="relative w-full h-48 overflow-hidden border-b border-green-700/60 group">
+      {/* Banner / Image */}
+      <div className="relative w-full h-44 overflow-hidden border-b border-emerald-900/40">
         <Image
           src={image}
-          alt={`Screenshot tampilan ${title}`}
+          alt={`Screenshot of ${title}`}
           fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, 380px"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           placeholder="blur"
-          blurDataURL="/projects/placeholder.webp"
+          blurDataURL={DEFAULT_BLUR_DATA}
           loading="lazy"
           quality={70}
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1b0e] via-transparent to-transparent opacity-80 pointer-events-none" />
       </div>
 
-      <div className="p-5 flex-1 flex flex-col">
-        <h3 id={titleId} className="text-xl font-extrabold text-green-400 glow-green">
-          {title}
-        </h3>
-        <p className="text-green-300/90 text-sm mt-2 flex-1 leading-relaxed">
-          {description}
-        </p>
+      {/* Content Details */}
+      <div className="p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <h3
+            id={titleId}
+            className="text-lg font-bold text-emerald-300 group-hover:text-emerald-200 transition-colors line-clamp-1"
+          >
+            {title}
+          </h3>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {tech.map((t) => (
-            <TechBadge key={t} tech={t} />
-          ))}
+          <p className="text-emerald-100/70 text-xs mt-2.5 line-clamp-3 leading-relaxed font-light">
+            {description}
+          </p>
         </div>
 
-        <div className="mt-5 flex gap-4 pt-2">
-          <a
-            href={github}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Repository GitHub untuk ${title}`}
-            className="text-green-400 hover:text-lime-300 hover:underline flex items-center gap-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded"
+        <div>
+          {/* Tech Stack List */}
+          <ul
+            className="flex flex-wrap gap-1.5 list-none p-0 mt-3"
+            aria-label="Tech Stack"
           >
-            <Github size={16} /> GitHub
-          </a>
+            {tech.map((t) => (
+              <li key={t}>
+                <TechBadge tech={t} />
+              </li>
+            ))}
+          </ul>
 
-          {demo?.trim() && (
+          {/* Action Links */}
+          <div className="mt-4 pt-3 border-t border-emerald-900/40 flex items-center justify-between">
             <a
-              href={demo}
+              href={github}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Demo langsung untuk ${title}`}
-              className="text-green-400 hover:text-lime-300 hover:underline flex items-center gap-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded"
+              aria-label={`GitHub repository for ${title} (opens in a new tab)`}
+              className="text-emerald-400 hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 rounded px-2 py-1 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/40"
             >
-              <ExternalLink size={16} /> Live Demo
+              <Github size={13} aria-hidden="true" />
+              <span>Repository</span>
             </a>
-          )}
+
+            {hasDemo && (
+              <a
+                href={demo}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Live demo for ${title} (opens in a new tab)`}
+                className="text-lime-400 hover:text-white flex items-center gap-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-lime-400 rounded px-2 py-1 bg-lime-950/40 hover:bg-lime-900/50 border border-lime-800/40"
+              >
+                <ExternalLink size={13} aria-hidden="true" />
+                <span>Live Demo</span>
+              </a>
+            )}
+          </div>
         </div>
       </div>
-    </motion.div>
+    </article>
   );
 };
 

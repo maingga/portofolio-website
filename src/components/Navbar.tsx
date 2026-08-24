@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Menu, X, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { useScrollSpy } from "@/hooks/useScrollSpy";
 
-const SECTION_IDS = ["hero", "about", "skills", "portfolio", "contact"] as const;
+const SECTION_IDS = ["hero", "about", "skills", "projects", "contact"] as const;
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -15,27 +15,36 @@ export default function Navbar() {
   const [scrollDir, setScrollDir] = useState<"up" | "down">("up");
   const activeId = useScrollSpy(SECTION_IDS as unknown as string[], 80);
 
-  useEffect(() => {
+  // Optimasi: Gunakan useCallback agar referensi fungsi onScroll stabil
+  const handleScroll = useCallback(() => {
     let lastY = window.scrollY;
 
-    const onScroll = () => {
+    return () => {
       const currentY = window.scrollY;
       
       setShowTopButton(currentY > 300);
 
       // Hanya update scroll dir jika perbedaan scroll > 10px untuk menghemat re-render
       if (Math.abs(currentY - lastY) > 10) {
-        if (currentY > lastY && currentY > 80) {
-          setScrollDir("down");
-        } else {
-          setScrollDir("up");
-        }
+        setScrollDir(currentY > lastY && currentY > 80 ? "down" : "up");
         lastY = currentY;
       }
     };
+  }, []);
 
+  useEffect(() => {
+    const onScroll = handleScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, [handleScroll]);
+
+  // Handler untuk menutup menu mobile dan scroll mulus
+  const handleNavLinkClick = useCallback(() => {
+    setMenuOpen(false);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   return (
@@ -48,7 +57,7 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setMenuOpen(false)}
+            onClick={handleNavLinkClick}
           />
         )}
       </AnimatePresence>
@@ -144,7 +153,7 @@ export default function Navbar() {
                     <li key={id}>
                       <Link
                         href={`#${id}`}
-                        onClick={() => setMenuOpen(false)}
+                        onClick={handleNavLinkClick}
                         aria-current={isActive ? "page" : undefined}
                         className={clsx(
                           "px-3 py-2 block transition-colors duration-300 rounded",
@@ -172,7 +181,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            onClick={scrollToTop}
             className="fixed bottom-5 right-5 z-50 p-3 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
             aria-label="Back to top"
           >

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 
-// 1. CONSTANTS (Sesuai standar Single Source of Truth)
+// 1. CONSTANTS (Outside component to prevent re-creation)
 const ROLES: readonly string[] = [
   "Web Developer",
   "Mobile Developer",
@@ -35,10 +35,8 @@ const Hero = () => {
   const [subIndex, setSubIndex] = useState<number>(0);
   const [reverse, setReverse] = useState<boolean>(false);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
-  
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 2. TYPING EFFECT LOGIC (Dibersihkan dari Race Conditions)
+  // 2. TYPING EFFECT LOGIC
   useEffect(() => {
     if (index >= ROLES.length) return;
 
@@ -46,13 +44,17 @@ const Hero = () => {
     const isEndOfWord = !reverse && subIndex === currentRole.length;
     const isStartOfWord = reverse && subIndex === 0;
 
-    const delay = reverse
+    let delay: number = reverse
       ? CONFIG.TYPING_SPEED_BACKWARD
       : CONFIG.TYPING_SPEED_FORWARD;
 
-    typingTimeoutRef.current = setTimeout(() => {
+    if (isEndOfWord) {
+      delay = CONFIG.TYPING_PAUSE_MS;
+    }
+
+    const timer = setTimeout(() => {
       if (isEndOfWord) {
-        setTimeout(() => setReverse(true), CONFIG.TYPING_PAUSE_MS);
+        setReverse(true);
       } else if (isStartOfWord) {
         setReverse(false);
         setIndex((prev) => (prev + 1) % ROLES.length);
@@ -61,9 +63,7 @@ const Hero = () => {
       }
     }, delay);
 
-    return () => {
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
+    return () => clearTimeout(timer);
   }, [subIndex, index, reverse]);
 
   // 3. FLIP EFFECT LOGIC
@@ -75,13 +75,15 @@ const Hero = () => {
     return () => clearInterval(flipInterval);
   }, []);
 
+  const activeRole = ROLES[index] || "";
+
   return (
     <section
       id="hero"
       className="relative flex flex-col-reverse md:flex-row items-center justify-between gap-10 min-h-[90vh] px-6 py-20 md:px-16 bg-[#0f0f0f] text-green-400 overflow-hidden"
       aria-label="Hero Section"
     >
-      {/* Decorative background grid */}
+      {/* Dynamic Background Pattern */}
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_1px_1px,_#22c55e10_1px,_transparent_0)] [background-size:16px_16px] pointer-events-none" />
 
       {/* Left Column: Content */}
@@ -102,11 +104,16 @@ const Hero = () => {
           ⚡
         </h1>
 
-        {/* Dynamic Typing Display */}
-        <div className="h-8 flex items-center justify-center md:justify-start" aria-live="polite">
-          <p className="text-lime-400 text-xl md:text-2xl font-mono">
-            {ROLES[index]?.substring(0, subIndex)}
-            <span className="animate-pulse" aria-hidden="true">|</span>
+        {/* Dynamic Typing Display (Screen Reader Friendly) */}
+        <div className="h-8 min-h-[32px] flex items-center justify-center md:justify-start">
+          <p 
+            className="text-lime-400 text-xl md:text-2xl font-mono"
+            aria-label={`Role: ${activeRole}`}
+          >
+            <span aria-hidden="true">
+              {activeRole.substring(0, subIndex)}
+              <span className="animate-pulse">|</span>
+            </span>
           </p>
         </div>
 
@@ -133,7 +140,6 @@ const Hero = () => {
 
         {/* Call To Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start mt-6">
-          {/* PERBAIKAN SQA: Native Anchor untuk Download Payload */}
           <a
             href={CONFIG.CV_PATH}
             download={CONFIG.CV_FILENAME}
@@ -163,14 +169,14 @@ const Hero = () => {
         <div className="bg-green-950/20 border border-green-500/20 p-5 sm:p-6 rounded-2xl flex flex-col items-center">
           <div className="w-[220px] h-[220px] sm:w-[280px] sm:h-[280px] md:w-[300px] md:h-[300px] [perspective:1000px]">
             <motion.div
-              className="w-full h-full relative rounded-full [transform-style:preserve-3d]"
+              className="w-full h-full relative rounded-full [transform-style:preserve-3d] will-change-transform"
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
-              {/* SISI DEPAN */}
+              {/* FRONT: Avatar */}
               <div className="absolute inset-0 rounded-full [backface-visibility:hidden] overflow-hidden border-4 border-green-500 shadow-lg">
                 <Image
-                  src="/profile.png"
+                  src="/profile.webp"
                   alt="Ahmad Nana Cyberpunk Avatar"
                   fill
                   sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
@@ -179,17 +185,17 @@ const Hero = () => {
                 />
               </div>
 
-            {/* SISI BELAKANG: Real Profile */}
-            <div className="absolute inset-0 rounded-full [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden border-4 border-green-600 shadow-lg">
-              <Image
-                src="/profile-real.png"
-                alt="Ahmad Nana Real Profile"
-                fill
-                sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
-                priority // <-- Tambahkan atribut ini di sini
-                className="object-cover"
-              />
-            </div>              
+              {/* BACK: Real Profile (Ditambahkan priority={true} agar peringatan LCP hilang) */}
+              <div className="absolute inset-0 rounded-full [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden border-4 border-green-600 shadow-lg">
+                <Image
+                  src="/profile-real.webp"
+                  alt="Ahmad Nana Real Profile"
+                  fill
+                  sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
+                  priority
+                  className="object-cover"
+                />
+              </div>
             </motion.div>
           </div>
 
@@ -200,7 +206,7 @@ const Hero = () => {
       </motion.div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 animate-bounce will-change-transform">
         <a href="#about" aria-label="Scroll Down to About section">
           <ChevronDown className="text-green-500" size={32} />
         </a>

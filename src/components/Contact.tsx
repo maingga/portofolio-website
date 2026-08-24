@@ -1,199 +1,272 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Linkedin, Facebook, Instagram, X as TwitterX } from "lucide-react";
+import { useState, useCallback, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Linkedin,
+  Facebook,
+  Instagram,
+  X as TwitterX,
+  Mail,
+  MapPin,
+  Send,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ArrowUpRight,
+  type LucideIcon,
+} from "lucide-react";
+
+const SOCIAL_LINKS = [
+  { name: "LinkedIn", href: "https://linkedin.com/in/ahmad-nana-maingga-b4a82021b", icon: Linkedin },
+  { name: "X (Twitter)", href: "https://x.com/MainggaF", icon: TwitterX },
+  { name: "Facebook", href: "https://facebook.com/ga.nyonk.3", icon: Facebook },
+  { name: "Instagram", href: "https://instagram.com/_maingg", icon: Instagram },
+] as const;
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface SocialButtonProps {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const SocialButton = memo(({ name, href, icon: Icon }: SocialButtonProps) => (
+  <motion.a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label={name}
+    whileHover={{ y: -3, scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="p-3.5 rounded-2xl bg-[#030d03]/80 border border-emerald-900/50 text-emerald-400 hover:text-emerald-200 hover:border-emerald-500/50 hover:bg-emerald-950/40 transition-all shadow-md"
+  >
+    <Icon className="w-5 h-5" aria-hidden="true" />
+  </motion.a>
+));
+SocialButton.displayName = "SocialButton";
+
+type FormState = { name: string; email: string; message: string };
+type StatusState = "idle" | "loading" | "success" | "error";
 
 export default function Contact() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
+  const [form, setForm] = useState<FormState>({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState<StatusState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const isValidEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errorMsg) setErrorMsg("");
+    if (status !== "idle") setStatus("idle");
+  }, [errorMsg, status]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      setErrorMsg("Please fill in all fields.");
+    const trimmedName = form.name.trim();
+    const trimmedEmail = form.email.trim();
+    const trimmedMessage = form.message.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedMessage) {
+      setErrorMsg("Please fill in all form fields.");
+      setStatus("error");
       return;
     }
-    if (!isValidEmail(form.email)) {
+
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
       setErrorMsg("Please enter a valid email address.");
+      setStatus("error");
       return;
     }
 
     setStatus("loading");
 
-    try {
-      await new Promise((res) => setTimeout(res, 1500));
+    setTimeout(() => {
       setStatus("success");
       setForm({ name: "", email: "", message: "" });
-    } catch {
-      setStatus("error");
-    }
-  };
+    }, 1500);
+  }, [form]);
 
   return (
-    <motion.section
-      id="contact"
-      className="max-w-3xl mx-auto px-6 py-16 text-green-300"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2 className="text-3xl md:text-4xl font-extrabold text-center text-green-400 mb-10 glow-green">
-        📬 Contact Me
-      </h2>
+    <section id="contact" className="relative py-24 px-6 overflow-hidden bg-[#030a03] text-emerald-50">
+      {/* Background Glows menggunakan CSS murni (mengurangi beban JS/Layout Shift) */}
+      <div 
+        aria-hidden="true"
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none transform-gpu"
+        style={{
+          background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(3, 10, 3, 0) 70%)"
+        }}
+      />
+      <div 
+        aria-hidden="true"
+        className="absolute bottom-10 right-10 w-[300px] h-[300px] pointer-events-none transform-gpu"
+        style={{
+          background: "radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, rgba(3, 10, 3, 0) 70%)"
+        }}
+      />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-        <div>
-          <label htmlFor="name" className="sr-only">
-            Your Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            name="name"
-            placeholder="Your Name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
-            required
-          />
+      <motion.div
+        className="max-w-4xl mx-auto relative z-10"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
+        <div className="text-center mb-14">
+          <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-4 py-1.5 rounded-full inline-block mb-4 shadow-sm">
+            Get In Touch
+          </span>
+          <h2 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-emerald-400 to-green-500 tracking-tight">
+            Collaborate With Me
+          </h2>
         </div>
 
-        <div>
-          <label htmlFor="email" className="sr-only">
-            Your Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            placeholder="Your Email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-green-500/60"
-            required
-          />
+        <div className="bg-[#071707]/70 backdrop-blur-md border border-emerald-800/30 shadow-2xl shadow-black/80 rounded-3xl p-6 md:p-12">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1.5">
+                <label htmlFor="name" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+                  Your Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  name="name"
+                  placeholder="Peter Parker"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 placeholder:text-emerald-800/60"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+                  Your Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="peter@example.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 placeholder:text-emerald-800/60"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="message" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+                Message
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                placeholder="How can I help you?"
+                rows={5}
+                value={form.message}
+                onChange={handleChange}
+                className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 resize-none placeholder:text-emerald-800/60"
+              />
+            </div>
+
+            <AnimatePresence mode="wait">
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.15 }}
+                  role="alert"
+                >
+                  <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-950/40 border border-rose-900/60 rounded-xl p-3.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
+                    <span>{errorMsg}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="w-full bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 hover:brightness-110 text-emerald-950 font-bold py-4 rounded-2xl transition-all duration-200 shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.99]"
+            >
+              {status === "loading" ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                  <span>Sending Message...</span>
+                </>
+              ) : (
+                <>
+                  <span>Send Message</span>
+                  <Send className="w-4 h-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden="true" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <AnimatePresence mode="wait">
+            {status === "success" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                role="status"
+                className="mt-6 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-center gap-3 text-sm font-medium"
+              >
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden="true" />
+                <span>Message sent successfully! Thank you. ✨</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="my-10 h-[1px] bg-gradient-to-r from-transparent via-emerald-800/40 to-transparent" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#030d03]/60 border border-emerald-900/40">
+              <div className="relative flex items-center justify-center p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/50">
+                <span className="absolute inline-flex h-full w-full rounded-xl bg-emerald-400/20 animate-ping opacity-75" aria-hidden="true" />
+                <MapPin className="w-5 h-5 text-emerald-400 relative z-10" aria-hidden="true" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-500/80 block">Current Location</span>
+                <span className="text-emerald-200 font-semibold text-sm">Kediri, Indonesia</span>
+              </div>
+            </div>
+
+            <a
+              href="mailto:nanamaingga12@gmail.com"
+              className="flex items-center justify-between p-4 rounded-2xl bg-[#030d03]/60 border border-emerald-900/40 hover:border-emerald-700/40 transition-all group"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/50 text-emerald-400">
+                  <Mail className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-500/80 block">Direct Email</span>
+                  <span className="text-emerald-200 font-semibold text-sm truncate block group-hover:text-emerald-400 transition-colors">
+                    nanamaingga12@gmail.com
+                  </span>
+                </div>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" aria-hidden="true" />
+            </a>
+          </div>
+
+          <div className="mt-8 flex justify-center items-center gap-3">
+            {SOCIAL_LINKS.map((item) => (
+              <SocialButton key={item.name} name={item.name} href={item.href} icon={item.icon} />
+            ))}
+          </div>
         </div>
-
-        <div>
-          <label htmlFor="message" className="sr-only">
-            Your Message
-          </label>
-          <textarea
-            id="message"
-            name="message"
-            placeholder="Your Message"
-            rows={5}
-            value={form.message}
-            onChange={handleChange}
-            className="w-full bg-[#0b1f0b] border border-green-700 text-green-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none placeholder:text-green-500/60"
-            required
-          />
-        </div>
-
-        {errorMsg && (
-          <p className="text-red-500 text-sm mt-[-0.25rem]">{errorMsg}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className={`bg-green-700 text-white font-semibold py-3 rounded-md hover:bg-green-600 transition-colors shadow-md ${
-            status === "loading" ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        >
-          {status === "loading" ? "Sending..." : "Send Message"}
-        </button>
-      </form>
-
-      {status === "success" && (
-        <p className="mt-4 text-green-400 text-center glow-green">
-          Your message has been sent successfully! ✨
-        </p>
-      )}
-      {status === "error" && (
-        <p className="mt-4 text-red-500 text-center">
-          Something went wrong. Please try again later.
-        </p>
-      )}
-
-      <div className="mt-12 text-center text-green-400 space-y-2 text-sm">
-        <p>📍 Kediri, Indonesia</p>
-        <p>
-          📞{" "}
-          <a
-            href="tel:+6287754532633"
-            className="text-lime-300 hover:underline"
-          >
-            +62 877-5453-2633
-          </a>
-        </p>
-        <p>
-          📧{" "}
-          <a
-            href="mailto:nanamaingga12@gmail.com"
-            className="text-lime-300 hover:underline"
-          >
-            nanamaingga12@gmail.com
-          </a>
-        </p>
-      </div>
-
-      <div className="mt-8 flex justify-center gap-6 text-green-400">
-        <a
-          href="https://linkedin.com/in/ahmad-nana-maingga-b4a82021b"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="LinkedIn Profile"
-          className="hover:text-lime-300 transition"
-        >
-          <Linkedin className="w-6 h-6" />
-        </a>
-        <a
-          href="https://x.com/MainggaF"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="X (Twitter) Profile"
-          className="hover:text-lime-300 transition"
-        >
-          <TwitterX className="w-6 h-6" />
-        </a>
-        <a
-          href="https://facebook.com/ga.nyonk.3"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Facebook Profile"
-          className="hover:text-lime-300 transition"
-        >
-          <Facebook className="w-6 h-6" />
-        </a>
-        <a
-          href="https://instagram.com/maingga_"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Instagram Profile"
-          className="hover:text-lime-300 transition"
-        >
-          <Instagram className="w-6 h-6" />
-        </a>
-      </div>
-
-      <div className="mt-10 h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-75" />
-    </motion.section>
+      </motion.div>
+    </section>
   );
 }

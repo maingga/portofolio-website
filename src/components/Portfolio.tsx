@@ -34,22 +34,43 @@ const PROJECTS: ProjectCardProps[] = [
   },
 ];
 
-export default function Portfolio() {
-  const [cards, setCards] = useState(PROJECTS);
-  const [currentIndex, setCurrentIndex] = useState(0);
+// Konfigurasi posisi deck untuk Desktop
+const DECK_CONFIG = [
+  {
+    stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
+    spread: { x: "-102%", y: 6, rotate: -3, scale: 1, zIndex: 1 },
+  },
+  {
+    stacked: { x: "0%", y: -6, rotate: 0, scale: 1, zIndex: 3 },
+    spread: { x: "0%", y: -10, rotate: 0, scale: 1.02, zIndex: 3 },
+  },
+  {
+    stacked: { x: "4%", y: 4, rotate: 4, scale: 0.96, zIndex: 2 },
+    spread: { x: "102%", y: 6, rotate: 3, scale: 1, zIndex: 2 },
+  },
+] as const;
 
-  // Mengoptimalkan fungsi rotasi kartu menggunakan useCallback
-  const handleSwipeComplete = useCallback(() => {
-    setCards((prevCards) => {
-      const copy = [...prevCards];
-      const movedCard = copy.shift();
-      if (movedCard) copy.push(movedCard);
+export default function Portfolio() {
+  // Desktop States
+  const [isSpread, setIsSpread] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(0);
+
+  // Mobile States
+  const [mobileCards, setMobileCards] = useState(PROJECTS);
+  const [mobileIndex, setMobileIndex] = useState(0);
+
+  // Handler untuk menggeser kartu di mobile secara efisien
+  const handleMobileSwipe = useCallback(() => {
+    setMobileCards((prev) => {
+      const copy = [...prev];
+      const moved = copy.shift();
+      if (moved) copy.push(moved);
       return copy;
     });
-    setCurrentIndex((prev) => (prev + 1) % PROJECTS.length);
+    setMobileIndex((prev) => (prev + 1) % PROJECTS.length);
   }, []);
 
-  const memoizedProjects = useMemo(() => cards, [cards]);
+  const memoizedProjects = useMemo(() => PROJECTS, []);
 
   return (
     <section
@@ -57,7 +78,7 @@ export default function Portfolio() {
       className="min-h-screen px-4 sm:px-6 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
       aria-labelledby="portfolio-heading"
     >
-      {/* Background Glow (GPU Optimized) */}
+      {/* Background Glow (Hardware-accelerated) */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu" />
 
       <div className="max-w-6xl w-full mx-auto relative z-10 flex flex-col items-center">
@@ -79,63 +100,104 @@ export default function Portfolio() {
             My Projects
           </h2>
           <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
-            Swipe or drag the card left/right to explore projects.
+            <span className="block sm:hidden">Swipe the card left or right to explore.</span>
+            <span className="hidden sm:inline">Hover over or click the card stack to explore the projects.</span>
           </p>
         </motion.div>
 
-        {/* SWIPEABLE DECK CONTAINER */}
-        <div className="relative w-full max-w-[310px] sm:max-w-[380px] h-[470px] sm:h-[490px] flex justify-center items-center select-none">
-          <AnimatePresence mode="popLayout">
-            {memoizedProjects.map((project, index) => {
-              const isTopCard = index === 0;
+        {/* ======================================================== */}
+        {/* 1. MOBILE VIEW: SWIPEABLE STACK (Hidden on Desktop)        */}
+        {/* ======================================================== */}
+        <div className="flex sm:hidden flex-col items-center w-full">
+          <div className="relative w-full max-w-[310px] h-[460px] flex justify-center items-center select-none">
+            <AnimatePresence mode="popLayout">
+              {mobileCards.map((project, index) => {
+                const isTopCard = index === 0;
 
-              return (
-                <motion.div
-                  key={project.title}
-                  className="absolute top-0 w-full cursor-grab active:cursor-grabbing touch-none will-change-transform"
-                  style={{ zIndex: memoizedProjects.length - index }}
-                  // Hanya kartu teratas yang dapat di-drag / swipe
-                  drag={isTopCard ? "x" : false}
-                  dragConstraints={{ left: 0, right: 0 }}
-                  dragElastic={0.9}
-                  onDragEnd={(_, info) => {
-                    // Jika digeser sejauh lebih dari 90px ke kiri atau kanan
-                    if (Math.abs(info.offset.x) > 90) {
-                      handleSwipeComplete();
-                    }
-                  }}
-                  animate={{
-                    scale: 1 - index * 0.04,
-                    y: index * 12,
-                    rotate: isTopCard ? 0 : index % 2 === 0 ? 3 : -3,
-                    opacity: index > 2 ? 0 : 1,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 280,
-                    damping: 24,
-                  }}
-                >
-                  <ProjectCard {...project} />
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                return (
+                  <motion.div
+                    key={`mobile-${project.title}`}
+                    className="absolute top-0 w-full cursor-grab active:cursor-grabbing touch-none will-change-transform"
+                    style={{ zIndex: mobileCards.length - index }}
+                    drag={isTopCard ? "x" : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.9}
+                    onDragEnd={(_, info) => {
+                      if (Math.abs(info.offset.x) > 90) {
+                        handleMobileSwipe();
+                      }
+                    }}
+                    animate={{
+                      scale: 1 - index * 0.04,
+                      y: index * 12,
+                      rotate: isTopCard ? 0 : index % 2 === 0 ? 3 : -3,
+                      opacity: index > 2 ? 0 : 1,
+                    }}
+                    transition={{ type: "spring", stiffness: 280, damping: 24 }}
+                  >
+                    <ProjectCard {...project} />
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+
+          {/* Mobile Indicator & Counter */}
+          <div className="flex items-center gap-2 mt-6">
+            {PROJECTS.map((_, idx) => (
+              <span
+                key={idx}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  idx === mobileIndex ? "w-6 bg-emerald-400" : "w-1.5 bg-emerald-800/60"
+                }`}
+              />
+            ))}
+            <span className="text-xs text-emerald-400/70 ml-2 font-mono">
+              {mobileIndex + 1} / {PROJECTS.length}
+            </span>
+          </div>
         </div>
 
-        {/* Dynamic Card Indicator */}
-        <div className="flex items-center gap-2 mt-6">
-          {PROJECTS.map((_, idx) => (
-            <span
-              key={idx}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx === currentIndex ? "w-6 bg-emerald-400" : "w-1.5 bg-emerald-800/60"
-              }`}
-            />
-          ))}
-          <span className="text-xs text-emerald-400/70 ml-2 font-mono">
-            {currentIndex + 1} / {PROJECTS.length}
-          </span>
+        {/* ======================================================== */}
+        {/* 2. DESKTOP VIEW: INTERACTIVE SPREAD DECK (Hidden on Mobile) */}
+        {/* ======================================================== */}
+        <div
+          className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center cursor-pointer select-none"
+          onMouseEnter={() => setIsSpread(true)}
+          onMouseLeave={() => {
+            setIsSpread(false);
+            setActiveCardIndex(null);
+          }}
+          onClick={() => setIsSpread((prev) => !prev)}
+        >
+          {memoizedProjects.map((project, index) => {
+            const config = DECK_CONFIG[index];
+            const isCardActive = activeCardIndex === index;
+            const targetPos = isSpread ? config.spread : config.stacked;
+
+            return (
+              <motion.div
+                key={`desktop-${project.title}`}
+                className="absolute top-0 w-full will-change-transform"
+                onMouseEnter={() => setActiveCardIndex(index)}
+                animate={{
+                  x: targetPos.x,
+                  y: targetPos.y,
+                  rotate: isCardActive ? 0 : targetPos.rotate,
+                  scale: isCardActive ? 1.05 : targetPos.scale,
+                  zIndex: isCardActive ? 20 : targetPos.zIndex,
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 180,
+                  damping: 22,
+                  mass: 0.8,
+                }}
+              >
+                <ProjectCard {...project} />
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>

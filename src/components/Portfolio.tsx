@@ -70,6 +70,22 @@ export default function Portfolio() {
     setMobileIndex((prev) => (prev + 1) % PROJECTS.length);
   }, []);
 
+  // Handler untuk langsung melompat ke indeks proyek tertentu via dot indicator
+  const handleSelectMobileCard = useCallback((targetIndex: number) => {
+    const diff = (targetIndex - mobileIndex + PROJECTS.length) % PROJECTS.length;
+    if (diff === 0) return;
+
+    setMobileCards((prev) => {
+      const copy = [...prev];
+      for (let i = 0; i < diff; i++) {
+        const moved = copy.shift();
+        if (moved) copy.push(moved);
+      }
+      return copy;
+    });
+    setMobileIndex(targetIndex);
+  }, [mobileIndex]);
+
   const memoizedProjects = useMemo(() => PROJECTS, []);
 
   return (
@@ -78,7 +94,7 @@ export default function Portfolio() {
       className="min-h-screen px-4 sm:px-6 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
       aria-labelledby="portfolio-heading"
     >
-      {/* Background Glow (Hardware-accelerated) */}
+      {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu" />
 
       <div className="max-w-6xl w-full mx-auto relative z-10 flex flex-col items-center">
@@ -100,13 +116,13 @@ export default function Portfolio() {
             My Projects
           </h2>
           <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
-            <span className="block sm:hidden">Swipe the card left or right to explore.</span>
+            <span className="block sm:hidden">Swipe left/right or tap dots to explore.</span>
             <span className="hidden sm:inline">Hover over the card stack to explore the projects.</span>
           </p>
         </motion.div>
 
         {/* ======================================================== */}
-        {/* 1. MOBILE VIEW: SWIPEABLE STACK (Hidden on Desktop)        */}
+        {/* 1. MOBILE VIEW: INTERACTIVE SWIPEABLE STACK              */}
         {/* ======================================================== */}
         <div className="flex sm:hidden flex-col items-center w-full">
           <div className="relative w-full max-w-[310px] h-[460px] flex justify-center items-center select-none">
@@ -123,7 +139,7 @@ export default function Portfolio() {
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.9}
                     onDragEnd={(_, info) => {
-                      if (Math.abs(info.offset.x) > 90) {
+                      if (Math.abs(info.offset.x) > 80) {
                         handleMobileSwipe();
                       }
                     }}
@@ -142,13 +158,15 @@ export default function Portfolio() {
             </AnimatePresence>
           </div>
 
-          {/* Mobile Indicator & Counter */}
+          {/* Interactive Mobile Indicator & Counter */}
           <div className="flex items-center gap-2 mt-6">
             {PROJECTS.map((_, idx) => (
-              <span
+              <button
                 key={idx}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === mobileIndex ? "w-6 bg-emerald-400" : "w-1.5 bg-emerald-800/60"
+                onClick={() => handleSelectMobileCard(idx)}
+                aria-label={`Go to project ${idx + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === mobileIndex ? "w-6 bg-emerald-400" : "w-1.5 bg-emerald-800/60 hover:bg-emerald-700"
                 }`}
               />
             ))}
@@ -159,7 +177,7 @@ export default function Portfolio() {
         </div>
 
         {/* ======================================================== */}
-        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK (Hidden on Mobile) */}
+        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK                  */}
         {/* ======================================================== */}
         <div
           className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center select-none"

@@ -53,7 +53,7 @@ const DECK_CONFIG = [
 export default function Portfolio() {
   // Desktop States
   const [isSpread, setIsSpread] = useState(false);
-  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(0);
+  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
 
   // Mobile States
   const [mobileCards, setMobileCards] = useState(PROJECTS);
@@ -101,7 +101,7 @@ export default function Portfolio() {
           </h2>
           <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
             <span className="block sm:hidden">Swipe the card left or right to explore.</span>
-            <span className="hidden sm:inline">Hover over or click the card stack to explore the projects.</span>
+            <span className="hidden sm:inline">Click the card stack to spread and explore the projects.</span>
           </p>
         </motion.div>
 
@@ -163,12 +163,14 @@ export default function Portfolio() {
         {/* ======================================================== */}
         <div
           className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center cursor-pointer select-none"
-          onMouseEnter={() => setIsSpread(true)}
+          onClick={() => {
+            setIsSpread((prev) => !prev);
+            if (isSpread) setActiveCardIndex(null);
+          }}
           onMouseLeave={() => {
             setIsSpread(false);
             setActiveCardIndex(null);
           }}
-          onClick={() => setIsSpread((prev) => !prev)}
         >
           {memoizedProjects.map((project, index) => {
             const config = DECK_CONFIG[index];
@@ -179,13 +181,26 @@ export default function Portfolio() {
               <motion.div
                 key={`desktop-${project.title}`}
                 className="absolute top-0 w-full will-change-transform"
-                onMouseEnter={() => setActiveCardIndex(index)}
+                onMouseEnter={() => {
+                  if (isSpread) setActiveCardIndex(index);
+                }}
+                onMouseLeave={() => {
+                  if (isSpread) setActiveCardIndex(null);
+                }}
+                onClick={(e) => {
+                  // Mencegah event klik bubbling ke parent jika ingin interaksi spesifik di kartu
+                  e.stopPropagation();
+                  if (!isSpread) {
+                    setIsSpread(true);
+                  }
+                  setActiveCardIndex(index);
+                }}
                 animate={{
                   x: targetPos.x,
                   y: targetPos.y,
-                  rotate: isCardActive ? 0 : targetPos.rotate,
-                  scale: isCardActive ? 1.05 : targetPos.scale,
-                  zIndex: isCardActive ? 20 : targetPos.zIndex,
+                  rotate: isCardActive && isSpread ? 0 : targetPos.rotate,
+                  scale: isCardActive && isSpread ? 1.05 : targetPos.scale,
+                  zIndex: isCardActive && isSpread ? 20 : targetPos.zIndex,
                 }}
                 transition={{
                   type: "spring",

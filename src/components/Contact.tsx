@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, memo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Linkedin,
   Facebook,
@@ -31,17 +32,18 @@ interface SocialButtonProps {
   icon: LucideIcon;
 }
 
-// Menggunakan transisi CSS murni untuk performa maksimal tanpa overhead Framer Motion
 const SocialButton = memo(({ name, href, icon: Icon }: SocialButtonProps) => (
-  <a
+  <motion.a
     href={href}
     target="_blank"
     rel="noopener noreferrer"
     aria-label={name}
-    className="p-3.5 rounded-2xl bg-[#030d03]/80 border border-emerald-900/50 text-emerald-400 hover:text-emerald-200 hover:border-emerald-500/50 hover:bg-emerald-950/40 transition-all duration-200 shadow-md hover:-translate-y-0.5 active:scale-95"
+    whileHover={{ y: -3, scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    className="p-3.5 rounded-2xl bg-[#030d03]/80 border border-emerald-900/50 text-emerald-400 hover:text-emerald-200 hover:border-emerald-500/50 hover:bg-emerald-950/40 transition-all shadow-md"
   >
     <Icon className="w-5 h-5" aria-hidden="true" />
-  </a>
+  </motion.a>
 ));
 SocialButton.displayName = "SocialButton";
 
@@ -56,9 +58,9 @@ export default function Contact() {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    setErrorMsg("");
-    setStatus("idle");
-  }, []);
+    if (errorMsg) setErrorMsg("");
+    if (status !== "idle") setStatus("idle");
+  }, [errorMsg, status]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +92,7 @@ export default function Contact() {
 
   return (
     <section id="contact" className="relative py-24 px-6 overflow-hidden bg-[#030a03] text-emerald-50">
-      {/* Background Glows menggunakan CSS murni */}
+      {/* Background Glows menggunakan CSS murni (mengurangi beban JS/Layout Shift) */}
       <div 
         aria-hidden="true"
         className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none transform-gpu"
@@ -106,7 +108,13 @@ export default function Contact() {
         }}
       />
 
-      <div className="max-w-4xl mx-auto relative z-10">
+      <motion.div
+        className="max-w-4xl mx-auto relative z-10"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
         <div className="text-center mb-14">
           <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-4 py-1.5 rounded-full inline-block mb-4 shadow-sm">
             Get In Touch
@@ -167,20 +175,22 @@ export default function Contact() {
               />
             </div>
 
-            {/* Error Message dengan transisi CSS murni */}
-            <div 
-              className={`grid transition-all duration-200 ease-in-out overflow-hidden ${
-                errorMsg ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-              }`}
-              role="alert"
-            >
-              <div className="min-h-0">
-                <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-950/40 border border-rose-900/60 rounded-xl p-3.5">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
-                  <span>{errorMsg}</span>
-                </div>
-              </div>
-            </div>
+            <AnimatePresence mode="wait">
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.15 }}
+                  role="alert"
+                >
+                  <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-950/40 border border-rose-900/60 rounded-xl p-3.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
+                    <span>{errorMsg}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <button
               type="submit"
@@ -195,26 +205,27 @@ export default function Contact() {
               ) : (
                 <>
                   <span>Send Message</span>
-                  <Send className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden="true" />
+                  <Send className="w-4 h-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden="true" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Success Message dengan transisi CSS murni */}
-          <div 
-            className={`grid transition-all duration-300 ease-in-out overflow-hidden ${
-              status === "success" ? "grid-rows-[1fr] opacity-100 mt-6" : "grid-rows-[0fr] opacity-0 mt-0"
-            }`}
-            role="status"
-          >
-            <div className="min-h-0">
-              <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-center gap-3 text-sm font-medium">
+          <AnimatePresence mode="wait">
+            {status === "success" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                role="status"
+                className="mt-6 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-center gap-3 text-sm font-medium"
+              >
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden="true" />
                 <span>Message sent successfully! Thank you. ✨</span>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="my-10 h-[1px] bg-gradient-to-r from-transparent via-emerald-800/40 to-transparent" />
 
@@ -255,7 +266,7 @@ export default function Contact() {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

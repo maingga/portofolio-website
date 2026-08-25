@@ -81,17 +81,10 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * MOBILE INDEXES
+   * MOBILE CARDS
    * ==========================================
-   *
-   * current = project yang sedang aktif
-   *
-   * swipe LEFT:
-   * current → next
-   *
-   * swipe RIGHT:
-   * current → previous
    */
+
   const mobileCards = useMemo(() => {
     const length = PROJECTS.length;
 
@@ -144,9 +137,6 @@ export default function Portfolio() {
 
   const finishSwipe = useCallback(() => {
     if (swipeDirection === 1) {
-      /*
-       * LEFT → NEXT
-       */
       setMobileIndex(
         (current) =>
           (current + 1) % PROJECTS.length
@@ -154,9 +144,6 @@ export default function Portfolio() {
     }
 
     if (swipeDirection === -1) {
-      /*
-       * RIGHT → PREVIOUS
-       */
       setMobileIndex(
         (current) =>
           (current - 1 + PROJECTS.length) %
@@ -170,32 +157,26 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * NEXT
+   * NEXT PROJECT
    * ==========================================
    */
 
   const nextProject = useCallback(() => {
     if (isSwiping) return;
 
-    /*
-     * LEFT
-     */
     setSwipeDirection(1);
     setIsSwiping(true);
   }, [isSwiping]);
 
   /*
    * ==========================================
-   * PREVIOUS
+   * PREVIOUS PROJECT
    * ==========================================
    */
 
   const previousProject = useCallback(() => {
     if (isSwiping) return;
 
-    /*
-     * RIGHT
-     */
     setSwipeDirection(-1);
     setIsSwiping(true);
   }, [isSwiping]);
@@ -225,9 +206,6 @@ export default function Portfolio() {
       const distance = info.offset.x;
       const velocity = info.velocity.x;
 
-      /*
-       * Sedikit lebih responsif.
-       */
       const distanceThreshold = 70;
       const velocityThreshold = 400;
 
@@ -238,7 +216,7 @@ export default function Portfolio() {
           velocityThreshold;
 
       /*
-       * Gesture terlalu kecil.
+       * Swipe terlalu kecil.
        *
        * Framer Motion akan mengembalikan
        * current card ke posisi semula.
@@ -300,6 +278,9 @@ export default function Portfolio() {
     ) => {
       if (isSwiping) return;
 
+      /*
+       * LEFT → NEXT
+       */
       if (event.key === "ArrowLeft") {
         event.preventDefault();
 
@@ -309,6 +290,9 @@ export default function Portfolio() {
         );
       }
 
+      /*
+       * RIGHT → PREVIOUS
+       */
       if (event.key === "ArrowRight") {
         event.preventDefault();
 
@@ -480,12 +464,11 @@ export default function Portfolio() {
             aria-atomic="true"
           >
             {/* ==================================
-                PREVIOUS CARD
-                Swipe RIGHT → this card comes forward
+                PREVIOUS
             ================================== */}
 
             <motion.div
-              key={`previous-${mobileCards.previous.title}`}
+              key="previous-card"
               className="
                 absolute
                 top-0
@@ -497,12 +480,6 @@ export default function Portfolio() {
                   swipeDirection === -1
                     ? 4
                     : 1,
-              }}
-              initial={{
-                x: "-4%",
-                y: 12,
-                rotate: -3,
-                scale: 0.96,
               }}
               animate={{
                 x:
@@ -535,12 +512,11 @@ export default function Portfolio() {
             </motion.div>
 
             {/* ==================================
-                NEXT CARD
-                Swipe LEFT → this card comes forward
+                NEXT
             ================================== */}
 
             <motion.div
-              key={`next-${mobileCards.next.title}`}
+              key="next-card"
               className="
                 absolute
                 top-0
@@ -552,12 +528,6 @@ export default function Portfolio() {
                   swipeDirection === 1
                     ? 4
                     : 2,
-              }}
-              initial={{
-                x: "4%",
-                y: 12,
-                rotate: 3,
-                scale: 0.96,
               }}
               animate={{
                 x:
@@ -590,11 +560,11 @@ export default function Portfolio() {
             </motion.div>
 
             {/* ==================================
-                CURRENT CARD
+                CURRENT
             ================================== */}
 
             <motion.div
-              key={`current-${mobileCards.current.title}`}
+              key="current-card"
               className="
                 absolute
                 top-0
@@ -607,11 +577,7 @@ export default function Portfolio() {
               style={{
                 zIndex: 5,
               }}
-              drag={
-                !isSwiping
-                  ? "x"
-                  : false
-              }
+              drag={!isSwiping ? "x" : false}
               dragConstraints={{
                 left: -380,
                 right: 380,
@@ -690,9 +656,7 @@ export default function Portfolio() {
                   key={project.title}
                   type="button"
                   onClick={() =>
-                    handleIndicatorClick(
-                      index
-                    )
+                    handleIndicatorClick(index)
                   }
                   disabled={isSwiping}
                   aria-label={`Go to project ${
@@ -749,8 +713,6 @@ export default function Portfolio() {
               gap-2
             "
           >
-            {/* PREVIOUS */}
-
             <button
               type="button"
               onClick={previousProject}
@@ -777,8 +739,6 @@ export default function Portfolio() {
             >
               ←
             </button>
-
-            {/* NEXT */}
 
             <button
               type="button"

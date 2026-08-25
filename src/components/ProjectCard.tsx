@@ -50,12 +50,16 @@ const ProjectCard = ({
         sm:h-[470px]
       "
     >
-      {/* Image */}
+      {/* ======================================
+          IMAGE
+      ====================================== */}
+
       <div
         className="
           relative
           h-40
           w-full
+          shrink-0
           overflow-hidden
           border-b
           border-emerald-900/40
@@ -67,8 +71,8 @@ const ProjectCard = ({
           src={image}
           alt={`Screenshot of ${title}`}
           fill
-          sizes="(max-width: 768px) 100vw, 380px"
-          loading="lazy"
+          sizes="(max-width: 640px) 320px, 380px"
+          loading="eager"
           quality={65}
           placeholder="blur"
           blurDataURL={DEFAULT_BLUR_DATA}
@@ -96,7 +100,10 @@ const ProjectCard = ({
         />
       </div>
 
-      {/* Content */}
+      {/* ======================================
+          CONTENT
+      ====================================== */}
+
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
         <div>
           <h3
@@ -129,7 +136,10 @@ const ProjectCard = ({
         </div>
 
         <div>
-          {/* Tech Stack */}
+          {/* ==================================
+              TECH STACK
+          ================================== */}
+
           <ul
             className="
               mt-3
@@ -148,7 +158,10 @@ const ProjectCard = ({
             ))}
           </ul>
 
-          {/* Links */}
+          {/* ==================================
+              LINKS
+          ================================== */}
+
           <div
             className="
               mt-3
@@ -191,6 +204,7 @@ const ProjectCard = ({
                 size={13}
                 aria-hidden="true"
               />
+
               <span>Repository</span>
             </a>
 
@@ -225,6 +239,7 @@ const ProjectCard = ({
                   size={13}
                   aria-hidden="true"
                 />
+
                 <span>Live Demo</span>
               </a>
             )}

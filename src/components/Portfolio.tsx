@@ -81,29 +81,72 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * MOBILE CARDS
+   * MOBILE INDEXES
    * ==========================================
    *
-   * We only render the current card and the
-   * next two cards.
+   * current = project yang sedang aktif
+   *
+   * swipe LEFT:
+   * current → next
+   *
+   * swipe RIGHT:
+   * current → previous
    */
   const mobileCards = useMemo(() => {
     const length = PROJECTS.length;
 
-    return [
-      PROJECTS[mobileIndex],
-      PROJECTS[(mobileIndex + 1) % length],
-      PROJECTS[(mobileIndex + 2) % length],
-    ];
+    const previousIndex =
+      (mobileIndex - 1 + length) % length;
+
+    const nextIndex =
+      (mobileIndex + 1) % length;
+
+    return {
+      current: PROJECTS[mobileIndex],
+      previous: PROJECTS[previousIndex],
+      next: PROJECTS[nextIndex],
+    };
   }, [mobileIndex]);
+
+  /*
+   * ==========================================
+   * TRANSITIONS
+   * ==========================================
+   */
+
+  const cardTransition = reduceMotion
+    ? {
+        duration: 0,
+      }
+    : {
+        type: "spring" as const,
+        stiffness: 280,
+        damping: 30,
+        mass: 0.8,
+      };
+
+  const stackTransition = reduceMotion
+    ? {
+        duration: 0,
+      }
+    : {
+        type: "spring" as const,
+        stiffness: 240,
+        damping: 28,
+        mass: 0.8,
+      };
 
   /*
    * ==========================================
    * FINISH SWIPE
    * ==========================================
    */
+
   const finishSwipe = useCallback(() => {
     if (swipeDirection === 1) {
+      /*
+       * LEFT → NEXT
+       */
       setMobileIndex(
         (current) =>
           (current + 1) % PROJECTS.length
@@ -111,6 +154,9 @@ export default function Portfolio() {
     }
 
     if (swipeDirection === -1) {
+      /*
+       * RIGHT → PREVIOUS
+       */
       setMobileIndex(
         (current) =>
           (current - 1 + PROJECTS.length) %
@@ -124,24 +170,32 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * NEXT PROJECT
+   * NEXT
    * ==========================================
    */
+
   const nextProject = useCallback(() => {
     if (isSwiping) return;
 
+    /*
+     * LEFT
+     */
     setSwipeDirection(1);
     setIsSwiping(true);
   }, [isSwiping]);
 
   /*
    * ==========================================
-   * PREVIOUS PROJECT
+   * PREVIOUS
    * ==========================================
    */
+
   const previousProject = useCallback(() => {
     if (isSwiping) return;
 
+    /*
+     * RIGHT
+     */
     setSwipeDirection(-1);
     setIsSwiping(true);
   }, [isSwiping]);
@@ -150,11 +204,8 @@ export default function Portfolio() {
    * ==========================================
    * DRAG END
    * ==========================================
-   *
-   * The card follows the finger during the drag.
-   * Only after release do we decide whether
-   * the card should leave or return.
    */
+
   const handleDragEnd = useCallback(
     (
       _: MouseEvent | TouchEvent | PointerEvent,
@@ -174,8 +225,11 @@ export default function Portfolio() {
       const distance = info.offset.x;
       const velocity = info.velocity.x;
 
-      const distanceThreshold = 90;
-      const velocityThreshold = 500;
+      /*
+       * Sedikit lebih responsif.
+       */
+      const distanceThreshold = 70;
+      const velocityThreshold = 400;
 
       const shouldSwipe =
         Math.abs(distance) >=
@@ -184,25 +238,32 @@ export default function Portfolio() {
           velocityThreshold;
 
       /*
-       * Not enough movement:
-       * Framer Motion will naturally animate
-       * the card back to the center.
+       * Gesture terlalu kecil.
+       *
+       * Framer Motion akan mengembalikan
+       * current card ke posisi semula.
        */
       if (!shouldSwipe) {
         return;
       }
 
       /*
-       * Negative X = swipe left = next.
-       * Positive X = swipe right = previous.
+       * LEFT → NEXT
        */
-      if (distance < 0 || velocity < 0) {
+      if (
+        distance < 0 ||
+        velocity < 0
+      ) {
         setSwipeDirection(1);
         setIsSwiping(true);
-      } else {
-        setSwipeDirection(-1);
-        setIsSwiping(true);
+        return;
       }
+
+      /*
+       * RIGHT → PREVIOUS
+       */
+      setSwipeDirection(-1);
+      setIsSwiping(true);
     },
     [isSwiping]
   );
@@ -212,6 +273,7 @@ export default function Portfolio() {
    * INDICATOR
    * ==========================================
    */
+
   const handleIndicatorClick = useCallback(
     (index: number) => {
       if (
@@ -231,8 +293,11 @@ export default function Portfolio() {
    * KEYBOARD
    * ==========================================
    */
+
   const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>) => {
+    (
+      event: React.KeyboardEvent<HTMLElement>
+    ) => {
       if (isSwiping) return;
 
       if (event.key === "ArrowLeft") {
@@ -240,8 +305,7 @@ export default function Portfolio() {
 
         setMobileIndex(
           (current) =>
-            (current - 1 + PROJECTS.length) %
-            PROJECTS.length
+            (current + 1) % PROJECTS.length
         );
       }
 
@@ -250,49 +314,13 @@ export default function Portfolio() {
 
         setMobileIndex(
           (current) =>
-            (current + 1) % PROJECTS.length
+            (current - 1 + PROJECTS.length) %
+            PROJECTS.length
         );
       }
     },
     [isSwiping]
   );
-
-  /*
-   * ==========================================
-   * MOBILE SWIPE TRANSITION
-   * ==========================================
-   *
-   * Tween is intentionally used here instead
-   * of an aggressive spring.
-   *
-   * This makes the card feel like it has
-   * momentum instead of snapping.
-   */
-  const swipeTransition = reduceMotion
-    ? {
-        duration: 0,
-      }
-    : {
-        type: "tween" as const,
-        duration: 0.28,
-        ease: [0.22, 1, 0.36, 1] as const,
-      };
-
-  /*
-   * ==========================================
-   * MOBILE STACK TRANSITION
-   * ==========================================
-   */
-  const stackTransition = reduceMotion
-    ? {
-        duration: 0,
-      }
-    : {
-        type: "spring" as const,
-        stiffness: 260,
-        damping: 28,
-        mass: 0.8,
-      };
 
   return (
     <section
@@ -451,163 +479,197 @@ export default function Portfolio() {
             aria-live="polite"
             aria-atomic="true"
           >
-            {mobileCards.map(
-              (project, index) => {
-                const isTopCard =
-                  index === 0;
+            {/* ==================================
+                PREVIOUS CARD
+                Swipe RIGHT → this card comes forward
+            ================================== */}
 
-                /*
-                 * ==================================
-                 * TOP CARD
-                 * ==================================
-                 *
-                 * Before swipe:
-                 * x = 0
-                 *
-                 * During drag:
-                 * Framer Motion controls x.
-                 *
-                 * After threshold:
-                 * animate x to +/- 450px.
-                 */
-                const topCardAnimation =
-                  isTopCard
-                    ? {
-                        x:
-                          swipeDirection === 1
-                            ? -450
-                            : swipeDirection === -1
-                              ? 450
-                              : 0,
+            <motion.div
+              key={`previous-${mobileCards.previous.title}`}
+              className="
+                absolute
+                top-0
+                w-full
+                will-change-transform
+              "
+              style={{
+                zIndex:
+                  swipeDirection === -1
+                    ? 4
+                    : 1,
+              }}
+              initial={{
+                x: "-4%",
+                y: 12,
+                rotate: -3,
+                scale: 0.96,
+              }}
+              animate={{
+                x:
+                  swipeDirection === -1
+                    ? 0
+                    : "-4%",
 
-                        y: 0,
+                y:
+                  swipeDirection === -1
+                    ? 0
+                    : 12,
 
-                        rotate:
-                          swipeDirection === 1
-                            ? -8
-                            : swipeDirection === -1
-                              ? 8
-                              : 0,
+                rotate:
+                  swipeDirection === -1
+                    ? 0
+                    : -3,
 
-                        scale: 1,
+                scale:
+                  swipeDirection === -1
+                    ? 1
+                    : 0.96,
 
-                        opacity:
-                          swipeDirection !== 0
-                            ? 0
-                            : 1,
-                      }
-                    : {
-                        /*
-                         * When the front card leaves,
-                         * the second card smoothly moves
-                         * into the front position.
-                         */
-                        x: 0,
+                opacity: 1,
+              }}
+              transition={stackTransition}
+            >
+              <MemoProjectCard
+                {...mobileCards.previous}
+              />
+            </motion.div>
 
-                        y:
-                          isSwiping && index === 1
-                            ? 0
-                            : index * 12,
+            {/* ==================================
+                NEXT CARD
+                Swipe LEFT → this card comes forward
+            ================================== */}
 
-                        rotate:
-                          isSwiping &&
-                          index === 1
-                            ? 0
-                            : index % 2 === 0
-                              ? 3
-                              : -3,
+            <motion.div
+              key={`next-${mobileCards.next.title}`}
+              className="
+                absolute
+                top-0
+                w-full
+                will-change-transform
+              "
+              style={{
+                zIndex:
+                  swipeDirection === 1
+                    ? 4
+                    : 2,
+              }}
+              initial={{
+                x: "4%",
+                y: 12,
+                rotate: 3,
+                scale: 0.96,
+              }}
+              animate={{
+                x:
+                  swipeDirection === 1
+                    ? 0
+                    : "4%",
 
-                        scale:
-                          isSwiping &&
-                          index === 1
-                            ? 1
-                            : 1 -
-                              index * 0.04,
+                y:
+                  swipeDirection === 1
+                    ? 0
+                    : 12,
 
-                        opacity: 1,
-                      };
+                rotate:
+                  swipeDirection === 1
+                    ? 0
+                    : 3,
 
-                return (
-                  <motion.div
-                    key={`mobile-${project.title}`}
-                    className="
-                      absolute
-                      top-0
-                      w-full
-                      touch-none
-                      cursor-grab
-                      active:cursor-grabbing
-                      will-change-transform
-                    "
-                    style={{
-                      zIndex:
-                        10 - index,
-                    }}
-                    /*
-                     * Only the top card can be dragged.
-                     */
-                    drag={
-                      isTopCard &&
-                      !isSwiping
-                        ? "x"
-                        : false
-                    }
-                    /*
-                     * Allow the user to actually
-                     * move the card.
-                     *
-                     * This is one of the biggest
-                     * differences from the old version.
-                     */
-                    dragConstraints={{
-                      left: -380,
-                      right: 380,
-                    }}
-                    /*
-                     * Small elastic effect when
-                     * reaching the edge.
-                     */
-                    dragElastic={0.12}
-                    /*
-                     * Prevent momentum from continuing
-                     * after the finger is released.
-                     */
-                    dragMomentum={false}
-                    /*
-                     * Lock movement to horizontal axis.
-                     */
-                    dragDirectionLock
-                    /*
-                     * Animate from the CURRENT drag
-                     * position rather than making
-                     * the card suddenly jump.
-                     */
-                    animate={topCardAnimation}
-                    transition={
-                      isTopCard &&
-                      swipeDirection !== 0
-                        ? swipeTransition
-                        : stackTransition
-                    }
-                    onDragEnd={
-                      isTopCard
-                        ? handleDragEnd
-                        : undefined
-                    }
-                    onAnimationComplete={
-                      isTopCard &&
-                      swipeDirection !== 0
-                        ? finishSwipe
-                        : undefined
-                    }
-                  >
-                    <MemoProjectCard
-                      {...project}
-                    />
-                  </motion.div>
-                );
+                scale:
+                  swipeDirection === 1
+                    ? 1
+                    : 0.96,
+
+                opacity: 1,
+              }}
+              transition={stackTransition}
+            >
+              <MemoProjectCard
+                {...mobileCards.next}
+              />
+            </motion.div>
+
+            {/* ==================================
+                CURRENT CARD
+            ================================== */}
+
+            <motion.div
+              key={`current-${mobileCards.current.title}`}
+              className="
+                absolute
+                top-0
+                w-full
+                touch-none
+                cursor-grab
+                active:cursor-grabbing
+                will-change-transform
+              "
+              style={{
+                zIndex: 5,
+              }}
+              drag={
+                !isSwiping
+                  ? "x"
+                  : false
               }
-            )}
+              dragConstraints={{
+                left: -380,
+                right: 380,
+              }}
+              dragElastic={0.08}
+              dragMomentum={false}
+              dragDirectionLock
+              animate={{
+                /*
+                 * LEFT → keluar kiri
+                 */
+                x:
+                  swipeDirection === 1
+                    ? -430
+                    : /*
+                       * RIGHT → keluar kanan
+                       */
+                      swipeDirection === -1
+                      ? 430
+                      : 0,
+
+                y: 0,
+
+                rotate:
+                  swipeDirection === 1
+                    ? -8
+                    : swipeDirection === -1
+                      ? 8
+                      : 0,
+
+                scale: 1,
+
+                opacity:
+                  swipeDirection !== 0
+                    ? 0
+                    : 1,
+              }}
+              transition={
+                swipeDirection !== 0
+                  ? cardTransition
+                  : {
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 35,
+                      mass: 0.6,
+                    }
+              }
+              onDragEnd={handleDragEnd}
+              onAnimationComplete={
+                swipeDirection !== 0
+                  ? finishSwipe
+                  : undefined
+              }
+            >
+              <MemoProjectCard
+                {...mobileCards.current}
+              />
+            </motion.div>
           </div>
 
           {/* ======================================
@@ -687,12 +749,13 @@ export default function Portfolio() {
               gap-2
             "
           >
-            {/* LEFT → NEXT */}
+            {/* PREVIOUS */}
+
             <button
               type="button"
-              onClick={nextProject}
+              onClick={previousProject}
               disabled={isSwiping}
-              aria-label="Next project"
+              aria-label="Previous project"
               className="
                 flex
                 h-9
@@ -715,12 +778,13 @@ export default function Portfolio() {
               ←
             </button>
 
-            {/* RIGHT → PREVIOUS */}
+            {/* NEXT */}
+
             <button
               type="button"
-              onClick={previousProject}
+              onClick={nextProject}
               disabled={isSwiping}
-              aria-label="Previous project"
+              aria-label="Next project"
               className="
                 flex
                 h-9

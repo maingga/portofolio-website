@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* =========================================================
+   ROOT
+========================================================= */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,42 +16,54 @@
   }
 }
 
+/* =========================================================
+   BASE
+========================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: inherit;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* =========================================================
+   GREEN GLOW
+   Lightweight text glow
+========================================================= */
 
 @keyframes greenGlowElegant {
-  0% {
-    text-shadow:
-      0 0 2px #15803d,
-      0 0 4px #15803d;
-  }
-  50% {
-    text-shadow:
-      0 0 4px #15803d,
-      0 0 8px #166534;
-  }
+  0%,
   100% {
     text-shadow:
       0 0 2px #15803d,
       0 0 4px #15803d;
   }
+
+  50% {
+    text-shadow:
+      0 0 4px #15803d,
+      0 0 8px #166534;
+  }
 }
 
 .glow-green {
   color: #22c55e;
-  animation: greenGlowElegant 2.5s ease-in-out infinite;
+
   text-shadow:
     0 0 5px #22c55e,
     0 0 10px #22c55e,
     0 0 20px #16a34a;
+
+  animation: greenGlowElegant 2.5s ease-in-out infinite;
 }
+
+/* =========================================================
+   NEON BUTTON
+========================================================= */
 
 .neon-btn {
   box-shadow:
@@ -55,7 +71,19 @@ html {
     0 0 10px #84cc16,
     0 0 20px #84cc16,
     0 0 40px #84cc16;
-  transition: all 0.3s ease-in-out;
+
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    filter 200ms ease;
+}
+
+.neon-btn:hover {
+  filter: brightness(1.08);
+}
+
+.neon-btn:active {
+  transform: scale(0.98);
 }
 
 .neon-btn-soft {
@@ -64,11 +92,19 @@ html {
     0 0 12px rgba(132, 204, 22, 0.05);
 }
 
+/* =========================================================
+   GLITCH
+========================================================= */
+
 .glitch {
   position: relative;
+
   color: #00ff99;
+
   font-weight: bold;
+
   font-family: var(--font-audiowide);
+
   text-shadow:
     0 0 4px #00ff99,
     0 0 10px #006644;
@@ -76,61 +112,142 @@ html {
 
 .glitch::before,
 .glitch::after {
-  content: attr(data-text);
   position: absolute;
+
   left: 0;
+
   width: 100%;
+
   overflow: hidden;
+
   background: transparent;
-  clip: rect(0, 900px, 0, 0);
+
+  content: attr(data-text);
+
+  pointer-events: none;
 }
 
 .glitch::before {
   color: #00cc66;
+
   text-shadow: 0 0 2px #00cc66;
-  animation: glitchTop 2s infinite linear alternate-reverse;
+
+  animation:
+    glitchTop 2s infinite linear alternate-reverse;
 }
 
 .glitch::after {
   color: #006644;
+
   text-shadow: 0 0 2px #006644;
-  animation: glitchBottom 1.5s infinite linear alternate-reverse;
+
+  animation:
+    glitchBottom 1.5s infinite linear alternate-reverse;
 }
+
+/* =========================================================
+   GLITCH TOP
+========================================================= */
 
 @keyframes glitchTop {
-  0% {
-    clip: rect(0, 9999px, 0, 0);
-    transform: translate(-2px, -2px);
-  }
-  10% {
-    clip: rect(4px, 9999px, 14px, 0);
-    transform: translate(2px, -1px);
-  }
-  20% {
-    clip: rect(8px, 9999px, 18px, 0);
-    transform: translate(-1px, 1px);
-  }
+  0%,
   100% {
-    clip: rect(0, 9999px, 0, 0);
-    transform: translate(0);
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 0, 0);
+  }
+
+  10% {
+    clip-path: inset(4px 0 86% 0);
+    transform: translate3d(2px, -1px, 0);
+  }
+
+  20% {
+    clip-path: inset(8px 0 82% 0);
+    transform: translate3d(-1px, 1px, 0);
   }
 }
 
+/* =========================================================
+   GLITCH BOTTOM
+========================================================= */
+
 @keyframes glitchBottom {
-  0% {
-    clip: rect(0, 9999px, 0, 0);
-    transform: translate(2px, 1px);
-  }
-  10% {
-    clip: rect(12px, 9999px, 22px, 0);
-    transform: translate(-2px, 0);
-  }
-  20% {
-    clip: rect(6px, 9999px, 16px, 0);
-    transform: translate(1px, -1px);
-  }
+  0%,
   100% {
-    clip: rect(0, 9999px, 0, 0);
-    transform: translate(0);
+    clip-path: inset(100% 0 0 0);
+    transform: translate3d(0, 0, 0);
+  }
+
+  10% {
+    clip-path: inset(12px 0 76% 0);
+    transform: translate3d(-2px, 0, 0);
+  }
+
+  20% {
+    clip-path: inset(6px 0 84% 0);
+    transform: translate3d(1px, -1px, 0);
+  }
+}
+
+/* =========================================================
+   CONTACT BACKGROUND GLOW
+   Only transform is animated.
+   No permanent will-change to reduce memory/compositing cost.
+========================================================= */
+
+@keyframes contact-glow {
+  0%,
+  100% {
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-50%, -50%, 0) scale(1.08);
+  }
+}
+
+.animate-contact-glow {
+  animation: contact-glow 8s ease-in-out infinite;
+}
+
+/* =========================================================
+   CONTACT SUCCESS
+========================================================= */
+
+@keyframes contact-success {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-contact-success {
+  animation: contact-success 300ms ease-out both;
+}
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-contact-glow,
+  .animate-contact-success,
+  .glow-green,
+  .glitch::before,
+  .glitch::after {
+    animation: none;
+  }
+
+  .neon-btn {
+    transition: none;
   }
 }

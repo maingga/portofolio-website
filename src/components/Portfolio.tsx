@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useState } from "react";
+import { motion } from "framer-motion";
 import ProjectCard, { ProjectCardProps } from "./ProjectCard";
 
-const PROJECTS: ProjectCardProps[] = [
+const PROJECTS: readonly ProjectCardProps[] = [
   {
     title: "Sport Center Reservation System",
     description:
       "A web application for booking sports fields, featuring online reservations, payment integration, and user management.",
     image: "/projects/sport-center.webp",
     tech: ["Laravel", "Next.js", "MySQL", "Midtrans"],
-    github: "https://github.com/maingga/si-reservasi-sport-center.git",
-    demo: "",
+    github:
+      "https://github.com/maingga/si-reservasi-sport-center.git",
   },
   {
     title: "Smart Greenhouse Automation",
@@ -20,8 +20,8 @@ const PROJECTS: ProjectCardProps[] = [
       "An ESP32-based automated monitoring system with a real-time dashboard to control temperature, humidity, and lighting conditions.",
     image: "/projects/iot.webp",
     tech: ["ESP32", "DHT11", "LDR", "Blynk", "Telegram"],
-    github: "https://github.com/maingga/smart-irrigation-blynk-telegram.git",
-    demo: "",
+    github:
+      "https://github.com/maingga/smart-irrigation-blynk-telegram.git",
   },
   {
     title: "Wedding Equipment Rental App",
@@ -29,196 +29,412 @@ const PROJECTS: ProjectCardProps[] = [
       "A modern mobile app for managing wedding equipment rentals, built using Flutter with real-time authentication and backend powered by Firebase.",
     image: "/projects/wedding.webp",
     tech: ["Flutter", "Firebase", "Cloud Firestore"],
-    github: "https://github.com/maingga/SI-sewa-pernikahan-web-mobile-UD-JTJ.git",
-    demo: "",
+    github:
+      "https://github.com/maingga/SI-sewa-pernikahan-web-mobile-UD-JTJ.git",
   },
 ];
 
-// Konfigurasi posisi deck untuk Desktop (dibuat konstanta di luar komponen)
 const DECK_CONFIG = [
   {
-    stacked: { x: "-4%", y: 0, rotate: -4, scale: 0.96, zIndex: 1 },
-    spread: { x: "-104%", y: 4, rotate: -3, scale: 1, zIndex: 1 },
+    x: "-102%",
+    y: 4,
+    rotate: -3,
+    scale: 1,
+    zIndex: 1,
   },
   {
-    stacked: { x: "0%", y: -6, rotate: 0, scale: 1, zIndex: 3 },
-    spread: { x: "0%", y: -12, rotate: 0, scale: 1.03, zIndex: 3 },
+    x: "0%",
+    y: -10,
+    rotate: 0,
+    scale: 1.02,
+    zIndex: 3,
   },
   {
-    stacked: { x: "4%", y: 4, rotate: 4, scale: 0.96, zIndex: 2 },
-    spread: { x: "104%", y: 4, rotate: 3, scale: 1, zIndex: 2 },
+    x: "102%",
+    y: 4,
+    rotate: 3,
+    scale: 1,
+    zIndex: 2,
   },
 ] as const;
 
 export default function Portfolio() {
-  // Desktop States (Auto-Hover)
   const [isSpread, setIsSpread] = useState(false);
-  const [activeCardIndex, setActiveCardIndex] = useState<number | null>(null);
 
-  // Mobile States
-  const [mobileCards, setMobileCards] = useState(PROJECTS);
+  const [mobileCards, setMobileCards] =
+    useState<readonly ProjectCardProps[]>(PROJECTS);
+
   const [mobileIndex, setMobileIndex] = useState(0);
 
-  // Handler untuk menggeser kartu di mobile secara efisien
+  /*
+   * Mobile swipe
+   */
   const handleMobileSwipe = useCallback(() => {
     setMobileCards((prev) => {
-      const copy = [...prev];
-      const moved = copy.shift();
-      if (moved) copy.push(moved);
-      return copy;
+      if (prev.length <= 1) return prev;
+
+      return [
+        ...prev.slice(1),
+        prev[0],
+      ];
     });
-    setMobileIndex((prev) => (prev + 1) % PROJECTS.length);
+
+    setMobileIndex((prev) => {
+      return (prev + 1) % PROJECTS.length;
+    });
   }, []);
 
-  // Handler untuk langsung melompat ke indeks proyek tertentu via dot indicator
-  const handleSelectMobileCard = useCallback((targetIndex: number) => {
-    const diff = (targetIndex - mobileIndex + PROJECTS.length) % PROJECTS.length;
-    if (diff === 0) return;
+  /*
+   * Mobile indicator
+   */
+  const handleSelectMobileCard = useCallback(
+    (targetIndex: number) => {
+      const diff =
+        (targetIndex -
+          mobileIndex +
+          PROJECTS.length) %
+        PROJECTS.length;
 
-    setMobileCards((prev) => {
-      const copy = [...prev];
-      for (let i = 0; i < diff; i++) {
-        const moved = copy.shift();
-        if (moved) copy.push(moved);
-      }
-      return copy;
-    });
-    setMobileIndex(targetIndex);
-  }, [mobileIndex]);
+      if (diff === 0) return;
 
-  const memoizedProjects = useMemo(() => PROJECTS, []);
+      setMobileCards((prev) => {
+        const result = [...prev];
+
+        for (let i = 0; i < diff; i++) {
+          const first = result.shift();
+
+          if (first) {
+            result.push(first);
+          }
+        }
+
+        return result;
+      });
+
+      setMobileIndex(targetIndex);
+    },
+    [mobileIndex]
+  );
 
   return (
     <section
       id="portfolio"
-      className="min-h-screen px-4 sm:px-6 py-20 bg-[#071207] text-white flex flex-col justify-center items-center overflow-hidden relative"
       aria-labelledby="portfolio-heading"
+      className="
+        relative
+        flex
+        min-h-screen
+        flex-col
+        items-center
+        justify-center
+        overflow-hidden
+        bg-[#071207]
+        px-4
+        py-20
+        text-white
+        sm:px-6
+      "
     >
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none transform-gpu" />
+      {/* Background glow */}
+      <div
+        aria-hidden="true"
+        className="
+          pointer-events-none
+          absolute
+          left-1/2
+          top-1/2
+          h-[260px]
+          w-[260px]
+          -translate-x-1/2
+          -translate-y-1/2
+          rounded-full
+          bg-emerald-500/10
+          blur-[70px]
+          sm:h-[400px]
+          sm:w-[400px]
+          sm:blur-[90px]
+        "
+      />
 
-      <div className="max-w-6xl w-full mx-auto relative z-10 flex flex-col items-center">
-        {/* Header Section */}
-        <motion.div
-          className="text-center mb-10 max-w-xl px-2"
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          viewport={{ once: true, amount: 0.2 }}
+      <div
+        className="
+          relative
+          z-10
+          mx-auto
+          flex
+          w-full
+          max-w-6xl
+          flex-col
+          items-center
+        "
+      >
+        {/* =========================
+            HEADER
+            ========================= */}
+        <div
+          className="
+            mb-10
+            max-w-xl
+            px-2
+            text-center
+          "
         >
-          <span className="text-xs font-semibold tracking-widest text-emerald-400 uppercase bg-emerald-950/60 border border-emerald-800/50 px-3 py-1 rounded-full inline-block mb-3">
+          <span
+            className="
+              mb-3
+              inline-block
+              rounded-full
+              border
+              border-emerald-800/50
+              bg-emerald-950/60
+              px-3
+              py-1
+              text-xs
+              font-semibold
+              uppercase
+              tracking-widest
+              text-emerald-400
+            "
+          >
             Featured Works
           </span>
+
           <h2
             id="portfolio-heading"
-            /* Ditambahkan py-1 dan leading-normal agar huruf 'y' tidak terpotong oleh efek bg-clip-text */
-            className="text-3xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-green-400 to-lime-300 py-1 leading-normal sm:leading-tight"
+            className="
+              bg-gradient-to-r
+              from-emerald-300
+              via-green-400
+              to-lime-300
+              bg-clip-text
+              py-1
+              text-3xl
+              font-extrabold
+              leading-normal
+              text-transparent
+              sm:text-5xl
+              sm:leading-tight
+            "
           >
             My Projects
           </h2>
-          <p className="text-emerald-200/60 text-xs sm:text-sm mt-3">
-            <span className="block sm:hidden">Swipe left/right or tap dots to explore.</span>
-            <span className="hidden sm:inline">Hover over the card stack to explore the projects.</span>
+
+          <p
+            className="
+              mt-3
+              text-xs
+              text-emerald-200/60
+              sm:text-sm
+            "
+          >
+            <span className="block sm:hidden">
+              Swipe left/right or tap dots to explore.
+            </span>
+
+            <span className="hidden sm:inline">
+              Hover over the card stack to explore the projects.
+            </span>
           </p>
-        </motion.div>
+        </div>
 
-        {/* ======================================================== */}
-        {/* 1. MOBILE VIEW: INTERACTIVE SWIPEABLE STACK             */}
-        {/* ======================================================== */}
-        <div className="flex sm:hidden flex-col items-center w-full">
-          <div className="relative w-full max-w-[310px] h-[460px] flex justify-center items-center select-none">
-            <AnimatePresence mode="popLayout">
-              {mobileCards.map((project, index) => {
-                const isTopCard = index === 0;
+        {/* =========================
+            MOBILE
+            ========================= */}
+        <div
+          className="
+            flex
+            w-full
+            flex-col
+            items-center
+            sm:hidden
+          "
+        >
+          <div
+            className="
+              relative
+              flex
+              h-[460px]
+              w-full
+              max-w-[310px]
+              select-none
+              items-center
+              justify-center
+            "
+          >
+            {mobileCards.map((project, index) => {
+              const isTopCard = index === 0;
 
-                return (
-                  <motion.div
-                    key={`mobile-${project.title}`}
-                    className="absolute top-0 w-full cursor-grab active:cursor-grabbing touch-none will-change-transform"
-                    style={{ zIndex: mobileCards.length - index }}
-                    drag={isTopCard ? "x" : false}
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.9}
-                    onDragEnd={(_, info) => {
-                      if (Math.abs(info.offset.x) > 80) {
-                        handleMobileSwipe();
-                      }
-                    }}
-                    animate={{
-                      scale: 1 - index * 0.04,
-                      y: index * 12,
-                      rotate: isTopCard ? 0 : index % 2 === 0 ? 3 : -3,
-                      opacity: index > 2 ? 0 : 1,
-                    }}
-                    transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                  >
-                    <ProjectCard {...project} />
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+              /*
+               * Only render visible cards.
+               * This prevents unnecessary DOM/image work.
+               */
+              if (index > 2) {
+                return null;
+              }
+
+              return (
+                <motion.div
+                  key={`mobile-${project.title}`}
+                  className="
+                    absolute
+                    top-0
+                    w-full
+                    touch-none
+                    cursor-grab
+                    active:cursor-grabbing
+                  "
+                  style={{
+                    zIndex: mobileCards.length - index,
+                  }}
+                  drag={isTopCard ? "x" : false}
+                  dragConstraints={{
+                    left: 0,
+                    right: 0,
+                  }}
+                  dragElastic={0.7}
+                  onDragEnd={(_, info) => {
+                    if (Math.abs(info.offset.x) > 70) {
+                      handleMobileSwipe();
+                    }
+                  }}
+                  animate={{
+                    scale: 1 - index * 0.04,
+                    y: index * 12,
+                    rotate:
+                      index === 0
+                        ? 0
+                        : index % 2 === 0
+                          ? 3
+                          : -3,
+                  }}
+                  transition={{
+                    duration: 0.22,
+                    ease: "easeOut",
+                  }}
+                >
+                  <ProjectCard {...project} />
+                </motion.div>
+              );
+            })}
           </div>
 
-          {/* Interactive Mobile Indicator & Counter */}
-          <div className="flex items-center gap-2 mt-6">
-            {PROJECTS.map((_, idx) => (
+          {/* Indicators */}
+          <div
+            className="
+              mt-6
+              flex
+              items-center
+              gap-2
+            "
+          >
+            {PROJECTS.map((project, index) => (
               <button
-                key={idx}
-                onClick={() => handleSelectMobileCard(idx)}
-                aria-label={`Go to project ${idx + 1}`}
-                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  idx === mobileIndex ? "w-6 bg-emerald-400" : "w-1.5 bg-emerald-800/60 hover:bg-emerald-700"
-                }`}
+                key={project.title}
+                type="button"
+                onClick={() =>
+                  handleSelectMobileCard(index)
+                }
+                aria-label={`Go to project ${index + 1}`}
+                aria-current={
+                  index === mobileIndex
+                    ? "true"
+                    : undefined
+                }
+                className={`
+                  h-1.5
+                  rounded-full
+                  transition-[width,background-color]
+                  duration-300
+                  ${
+                    index === mobileIndex
+                      ? "w-6 bg-emerald-400"
+                      : "w-1.5 bg-emerald-800/60"
+                  }
+                `}
               />
             ))}
-            <span className="text-xs text-emerald-400/70 ml-2 font-mono">
+
+            <span
+              className="
+                ml-2
+                font-mono
+                text-xs
+                text-emerald-400/70
+              "
+            >
               {mobileIndex + 1} / {PROJECTS.length}
             </span>
           </div>
         </div>
 
-        {/* ======================================================== */}
-        {/* 2. DESKTOP VIEW: AUTO-HOVER SPREAD DECK                 */}
-        {/* ======================================================== */}
+        {/* =========================
+            DESKTOP
+            ========================= */}
         <div
-          className="hidden sm:flex relative w-full max-w-[380px] h-[490px] justify-center items-center select-none"
+          className="
+            relative
+            hidden
+            h-[490px]
+            w-full
+            max-w-[380px]
+            select-none
+            items-center
+            justify-center
+            sm:flex
+          "
           onMouseEnter={() => setIsSpread(true)}
-          onMouseLeave={() => {
-            setIsSpread(false);
-            setActiveCardIndex(null);
-          }}
+          onMouseLeave={() => setIsSpread(false)}
         >
-          {memoizedProjects.map((project, index) => {
+          {PROJECTS.map((project, index) => {
             const config = DECK_CONFIG[index];
-            const isCardActive = activeCardIndex === index;
-            const targetPos = isSpread ? config.spread : config.stacked;
 
             return (
-              <motion.div
+              <div
                 key={`desktop-${project.title}`}
-                className="absolute top-0 w-full will-change-transform cursor-pointer"
-                onMouseEnter={() => setActiveCardIndex(index)}
-                onMouseLeave={() => setActiveCardIndex(null)}
-                animate={{
-                  x: targetPos.x,
-                  y: targetPos.y,
-                  rotate: isCardActive && isSpread ? 0 : targetPos.rotate,
-                  scale: isCardActive && isSpread ? 1.06 : targetPos.scale,
-                  zIndex: isCardActive && isSpread ? 20 : targetPos.zIndex,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 220,
-                  damping: 20,
-                  mass: 0.7,
+                className="
+                  absolute
+                  top-0
+                  w-full
+                  cursor-pointer
+                  transition-[transform]
+                  duration-300
+                  ease-out
+                "
+                style={{
+                  zIndex: config.zIndex,
+                  transform: isSpread
+                    ? `translate(${config.x}, ${config.y}px) rotate(${config.rotate}deg) scale(${config.scale})`
+                    : getStackTransform(index),
                 }}
               >
                 <ProjectCard {...project} />
-              </motion.div>
+              </div>
             );
           })}
         </div>
       </div>
     </section>
   );
+}
+
+/**
+ * Desktop stacked position.
+ *
+ * CSS transform is used instead of Framer Motion
+ * because these cards don't require physics or dragging.
+ */
+function getStackTransform(index: number): string {
+  switch (index) {
+    case 0:
+      return "translate(-4%, 0) rotate(-4deg) scale(0.96)";
+
+    case 1:
+      return "translate(0, -6px) rotate(0deg) scale(1)";
+
+    case 2:
+      return "translate(4%, 4px) rotate(4deg) scale(0.96)";
+
+    default:
+      return "translate(0, 0) rotate(0deg) scale(1)";
+  }
 }

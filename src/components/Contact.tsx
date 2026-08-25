@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+
 import {
   Linkedin,
   Facebook,
@@ -17,14 +24,38 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
 const SOCIAL_LINKS = [
-  { name: "LinkedIn", href: "https://linkedin.com/in/ahmad-nana-maingga-b4a82021b", icon: Linkedin },
-  { name: "X (Twitter)", href: "https://x.com/MainggaF", icon: TwitterX },
-  { name: "Facebook", href: "https://facebook.com/ga.nyonk.3", icon: Facebook },
-  { name: "Instagram", href: "https://instagram.com/_maingg", icon: Instagram },
+  {
+    name: "LinkedIn",
+    href: "https://linkedin.com/in/ahmad-nana-maingga-b4a82021b",
+    icon: Linkedin,
+  },
+  {
+    name: "X (Twitter)",
+    href: "https://x.com/MainggaF",
+    icon: TwitterX,
+  },
+  {
+    name: "Facebook",
+    href: "https://facebook.com/ga.nyonk.3",
+    icon: Facebook,
+  },
+  {
+    name: "Instagram",
+    href: "https://instagram.com/_maingg",
+    icon: Instagram,
+  },
 ] as const;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 interface SocialButtonProps {
   name: string;
@@ -32,105 +63,477 @@ interface SocialButtonProps {
   icon: LucideIcon;
 }
 
-const SocialButton = memo(({ name, href, icon: Icon }: SocialButtonProps) => (
-  <motion.a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label={name}
-    whileHover={{ y: -3, scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    className="p-3.5 rounded-2xl bg-[#030d03]/80 border border-emerald-900/50 text-emerald-400 hover:text-emerald-200 hover:border-emerald-500/50 hover:bg-emerald-950/40 transition-all shadow-md"
-  >
-    <Icon className="w-5 h-5" aria-hidden="true" />
-  </motion.a>
-));
-SocialButton.displayName = "SocialButton";
+interface FormState {
+  name: string;
+  email: string;
+  message: string;
+}
 
-type FormState = { name: string; email: string; message: string };
 type StatusState = "idle" | "loading" | "success" | "error";
 
+/* =========================================================
+   SOCIAL BUTTON
+========================================================= */
+
+function SocialButton({
+  name,
+  href,
+  icon: Icon,
+}: SocialButtonProps) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Visit my ${name} profile`}
+      className="
+        group
+        relative
+        flex
+        h-12
+        w-12
+        items-center
+        justify-center
+        overflow-visible
+        rounded-2xl
+        border
+        border-emerald-900/60
+        bg-[#030d03]
+        text-emerald-400
+        shadow-md
+        shadow-black/30
+
+        transition-[transform,border-color,background-color,color,box-shadow]
+        duration-200
+        ease-out
+
+        hover:-translate-y-1
+        hover:border-emerald-500/70
+        hover:bg-emerald-950/70
+        hover:text-emerald-200
+        hover:shadow-lg
+        hover:shadow-emerald-950/40
+
+        active:translate-y-0
+        active:scale-95
+
+        focus-visible:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-emerald-400
+        focus-visible:ring-offset-2
+        focus-visible:ring-offset-[#071707]
+
+        motion-reduce:transform-none
+        motion-reduce:transition-none
+      "
+    >
+      {/* Hover glow */}
+      <span
+        aria-hidden="true"
+        className="
+          pointer-events-none
+          absolute
+          inset-0
+          rounded-2xl
+          bg-emerald-400/10
+          opacity-0
+          transition-opacity
+          duration-200
+          group-hover:opacity-100
+          motion-reduce:transition-none
+        "
+      />
+
+      {/* Icon */}
+      <Icon
+        className="
+          relative
+          z-10
+          h-5
+          w-5
+          transition-transform
+          duration-200
+          ease-out
+          group-hover:scale-110
+          motion-reduce:transform-none
+          motion-reduce:transition-none
+        "
+        aria-hidden="true"
+      />
+
+      {/* Tooltip */}
+      <span
+        role="tooltip"
+        className="
+          pointer-events-none
+          absolute
+          -top-10
+          left-1/2
+          z-20
+          -translate-x-1/2
+          translate-y-1
+          whitespace-nowrap
+          rounded-lg
+          border
+          border-emerald-800/60
+          bg-[#020902]
+          px-2.5
+          py-1.5
+          text-[11px]
+          font-medium
+          text-emerald-300
+          opacity-0
+          shadow-lg
+          shadow-black/40
+
+          transition-[opacity,transform]
+          duration-200
+
+          group-hover:translate-y-0
+          group-hover:opacity-100
+
+          motion-reduce:transition-none
+        "
+      >
+        {name}
+      </span>
+    </a>
+  );
+}
+
+/* =========================================================
+   CONTACT COMPONENT
+========================================================= */
+
 export default function Contact() {
-  const [form, setForm] = useState<FormState>({ name: "", email: "", message: "" });
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const [isVisible, setIsVisible] = useState(false);
+
+  const [form, setForm] = useState<FormState>({
+    name: "",
+    email: "",
+    message: "",
+  });
+
   const [status, setStatus] = useState<StatusState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errorMsg) setErrorMsg("");
-    if (status !== "idle") setStatus("idle");
-  }, [errorMsg, status]);
+  /* =======================================================
+     INTERSECTION OBSERVER
+  ======================================================= */
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg("");
+  useEffect(() => {
+    const section = sectionRef.current;
 
-    const trimmedName = form.name.trim();
-    const trimmedEmail = form.email.trim();
-    const trimmedMessage = form.message.trim();
-
-    if (!trimmedName || !trimmedEmail || !trimmedMessage) {
-      setErrorMsg("Please fill in all form fields.");
-      setStatus("error");
+    if (!section) {
       return;
     }
 
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setErrorMsg("Please enter a valid email address.");
-      setStatus("error");
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+
+          // Animation hanya berjalan sekali.
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.12,
+        rootMargin: "0px 0px -40px 0px",
+      }
+    );
+
+    observer.observe(section);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  /* =======================================================
+     INPUT HANDLER
+  ======================================================= */
+
+  const handleChange = useCallback(
+    (
+      event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      const { name, value } = event.target;
+
+      setForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+
+      setErrorMsg("");
+      setStatus("idle");
+    },
+    []
+  );
+
+  /* =======================================================
+     FORM SUBMIT
+  ======================================================= */
+
+  const handleSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const trimmedName = form.name.trim();
+      const trimmedEmail = form.email.trim();
+      const trimmedMessage = form.message.trim();
+
+      setErrorMsg("");
+
+      /* Required fields */
+
+      if (!trimmedName || !trimmedEmail || !trimmedMessage) {
+        setErrorMsg("Please fill in all form fields.");
+        setStatus("error");
+        return;
+      }
+
+      /* Email validation */
+
+      if (!EMAIL_REGEX.test(trimmedEmail)) {
+        setErrorMsg("Please enter a valid email address.");
+        setStatus("error");
+        return;
+      }
+
+      /*
+       * Simulated submit.
+       *
+       * Ganti bagian ini dengan API/email service
+       * ketika backend sudah tersedia.
+       */
+
+      setStatus("loading");
+    },
+    [form]
+  );
+
+  /* =======================================================
+     SIMULATED SUBMIT
+  ======================================================= */
+
+  useEffect(() => {
+    if (status !== "loading") {
       return;
     }
 
-    setStatus("loading");
-
-    setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setStatus("success");
-      setForm({ name: "", email: "", message: "" });
+
+      setForm({
+        name: "",
+        email: "",
+        message: "",
+      });
     }, 1500);
-  }, [form]);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [status]);
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
-    <section id="contact" className="relative py-24 px-6 overflow-hidden bg-[#030a03] text-emerald-50">
-      {/* Background Glows menggunakan CSS murni (mengurangi beban JS/Layout Shift) */}
-      <div 
+    <section
+      ref={sectionRef}
+      id="contact"
+      aria-labelledby="contact-heading"
+      className="
+        relative
+        overflow-hidden
+        bg-[#030a03]
+        px-4
+        py-24
+        text-emerald-50
+        sm:px-6
+      "
+    >
+      {/* ===================================================
+          BACKGROUND GLOW
+      =================================================== */}
+
+      <div
         aria-hidden="true"
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none transform-gpu"
-        style={{
-          background: "radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(3, 10, 3, 0) 70%)"
-        }}
-      />
-      <div 
-        aria-hidden="true"
-        className="absolute bottom-10 right-10 w-[300px] h-[300px] pointer-events-none transform-gpu"
-        style={{
-          background: "radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, rgba(3, 10, 3, 0) 70%)"
-        }}
+        className="
+          pointer-events-none
+          absolute
+          left-1/2
+          top-1/4
+          h-[260px]
+          w-[260px]
+          -translate-x-1/2
+          -translate-y-1/2
+          rounded-full
+          bg-emerald-500/5
+          blur-[50px]
+          motion-safe:animate-contact-glow
+          sm:h-[360px]
+          sm:w-[360px]
+          sm:blur-[60px]
+        "
       />
 
-      <motion.div
-        className="max-w-4xl mx-auto relative z-10"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-50px" }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+      {/* ===================================================
+          MAIN CONTENT
+      =================================================== */}
+
+      <div
+        className="
+          relative
+          z-10
+          mx-auto
+          max-w-4xl
+        "
       >
-        <div className="text-center mb-14">
-          <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400 bg-emerald-950/80 border border-emerald-700/50 px-4 py-1.5 rounded-full inline-block mb-4 shadow-sm">
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <div
+          className={`
+            mb-14
+            text-center
+            transition-[opacity,transform]
+            duration-700
+            ease-out
+            motion-reduce:transition-none
+            ${
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-5 opacity-0"
+            }
+          `}
+        >
+          <span
+            className="
+              mb-4
+              inline-block
+              rounded-full
+              border
+              border-emerald-700/50
+              bg-emerald-950/80
+              px-4
+              py-1.5
+              text-xs
+              font-semibold
+              uppercase
+              tracking-widest
+              text-emerald-400
+              shadow-sm
+            "
+          >
             Get In Touch
           </span>
-          <h2 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-emerald-400 to-green-500 tracking-tight">
+
+          <h2
+            id="contact-heading"
+            className="
+              bg-gradient-to-r
+              from-emerald-200
+              via-emerald-400
+              to-green-500
+              bg-clip-text
+              text-3xl
+              font-black
+              tracking-tight
+              text-transparent
+              sm:text-5xl
+            "
+          >
             Collaborate With Me
           </h2>
+
+          <p
+            className="
+              mx-auto
+              mt-4
+              max-w-xl
+              text-sm
+              leading-relaxed
+              text-emerald-300/70
+            "
+          >
+            Have a project, idea, or opportunity?
+            Feel free to reach out and let&apos;s
+            build something great together.
+          </p>
         </div>
 
-        <div className="bg-[#071707]/70 backdrop-blur-md border border-emerald-800/30 shadow-2xl shadow-black/80 rounded-3xl p-6 md:p-12">
-          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* =================================================
+            CONTACT CARD
+        ================================================= */}
+
+        <div
+          className={`
+            rounded-3xl
+            border
+            border-emerald-800/40
+            bg-[#071707]
+            p-6
+            shadow-2xl
+            shadow-black/80
+            transition-[opacity,transform]
+            duration-700
+            delay-150
+            ease-out
+            motion-reduce:transition-none
+            sm:p-12
+            ${
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-6 opacity-0"
+            }
+          `}
+        >
+          {/* ===============================================
+              FORM
+          =============================================== */}
+
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+            noValidate
+          >
+            {/* ---------------------------------------------
+                NAME + EMAIL
+            --------------------------------------------- */}
+
+            <div
+              className="
+                grid
+                grid-cols-1
+                gap-6
+                md:grid-cols-2
+              "
+            >
+              {/* NAME */}
+
               <div className="space-y-1.5">
-                <label htmlFor="name" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+                <label
+                  htmlFor="name"
+                  className="
+                    ml-1
+                    block
+                    text-xs
+                    font-medium
+                    uppercase
+                    tracking-wider
+                    text-emerald-400/90
+                  "
+                >
                   Your Name
                 </label>
+
                 <input
                   id="name"
                   type="text"
@@ -138,15 +541,45 @@ export default function Contact() {
                   placeholder="Peter Parker"
                   value={form.name}
                   onChange={handleChange}
-                  className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 placeholder:text-emerald-800/60"
                   autoComplete="name"
+                  required
+                  className="
+                    w-full
+                    rounded-2xl
+                    border
+                    border-emerald-900/60
+                    bg-[#030d03]
+                    p-4
+                    text-emerald-100
+                    outline-none
+                    transition-[border-color,box-shadow]
+                    duration-200
+                    placeholder:text-emerald-800/60
+                    focus:border-emerald-400
+                    focus:ring-4
+                    focus:ring-emerald-500/10
+                  "
                 />
               </div>
 
+              {/* EMAIL */}
+
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+                <label
+                  htmlFor="email"
+                  className="
+                    ml-1
+                    block
+                    text-xs
+                    font-medium
+                    uppercase
+                    tracking-wider
+                    text-emerald-400/90
+                  "
+                >
                   Your Email
                 </label>
+
                 <input
                   id="email"
                   type="email"
@@ -154,16 +587,48 @@ export default function Contact() {
                   placeholder="peter@example.com"
                   value={form.email}
                   onChange={handleChange}
-                  className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 placeholder:text-emerald-800/60"
                   autoComplete="email"
+                  required
+                  className="
+                    w-full
+                    rounded-2xl
+                    border
+                    border-emerald-900/60
+                    bg-[#030d03]
+                    p-4
+                    text-emerald-100
+                    outline-none
+                    transition-[border-color,box-shadow]
+                    duration-200
+                    placeholder:text-emerald-800/60
+                    focus:border-emerald-400
+                    focus:ring-4
+                    focus:ring-emerald-500/10
+                  "
                 />
               </div>
             </div>
 
+            {/* =============================================
+                MESSAGE
+            ============================================= */}
+
             <div className="space-y-1.5">
-              <label htmlFor="message" className="text-xs font-medium text-emerald-400/90 uppercase tracking-wider ml-1">
+              <label
+                htmlFor="message"
+                className="
+                  ml-1
+                  block
+                  text-xs
+                  font-medium
+                  uppercase
+                  tracking-wider
+                  text-emerald-400/90
+                "
+              >
                 Message
               </label>
+
               <textarea
                 id="message"
                 name="message"
@@ -171,102 +636,406 @@ export default function Contact() {
                 rows={5}
                 value={form.message}
                 onChange={handleChange}
-                className="w-full bg-[#030d03]/80 border border-emerald-900/60 focus:border-emerald-400 text-emerald-100 rounded-2xl p-4 outline-none transition-colors duration-200 focus:ring-4 focus:ring-emerald-500/10 resize-none placeholder:text-emerald-800/60"
+                required
+                className="
+                  w-full
+                  resize-none
+                  rounded-2xl
+                  border
+                  border-emerald-900/60
+                  bg-[#030d03]
+                  p-4
+                  text-emerald-100
+                  outline-none
+                  transition-[border-color,box-shadow]
+                  duration-200
+                  placeholder:text-emerald-800/60
+                  focus:border-emerald-400
+                  focus:ring-4
+                  focus:ring-emerald-500/10
+                "
               />
             </div>
 
-            <AnimatePresence mode="wait">
-              {errorMsg && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.15 }}
-                  role="alert"
-                >
-                  <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-950/40 border border-rose-900/60 rounded-xl p-3.5">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" aria-hidden="true" />
-                    <span>{errorMsg}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* =============================================
+                ERROR
+            ============================================= */}
+
+            {errorMsg && (
+              <div
+                role="alert"
+                className="
+                  flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  border
+                  border-rose-900/60
+                  bg-rose-950/40
+                  p-3.5
+                  text-sm
+                  text-rose-400
+                "
+              >
+                <AlertCircle
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* =============================================
+                SUBMIT BUTTON
+            ============================================= */}
 
             <button
               type="submit"
               disabled={status === "loading"}
-              className="w-full bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 hover:brightness-110 text-emerald-950 font-bold py-4 rounded-2xl transition-all duration-200 shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.99]"
+              aria-busy={status === "loading"}
+              className="
+                group
+                flex
+                w-full
+                items-center
+                justify-center
+                gap-2
+                rounded-2xl
+                bg-gradient-to-r
+                from-emerald-500
+                via-green-500
+                to-emerald-400
+                py-4
+                font-bold
+                text-emerald-950
+                shadow-lg
+                shadow-emerald-950/60
+                transition-[filter,transform,opacity]
+                duration-200
+                hover:brightness-110
+                active:scale-[0.99]
+                disabled:cursor-not-allowed
+                disabled:opacity-50
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-emerald-300
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-[#071707]
+              "
             >
               {status === "loading" ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                  <span>Sending Message...</span>
+                  <Loader2
+                    className="
+                      h-5
+                      w-5
+                      animate-spin
+                    "
+                    aria-hidden="true"
+                  />
+
+                  <span>
+                    Sending Message...
+                  </span>
                 </>
               ) : (
                 <>
-                  <span>Send Message</span>
-                  <Send className="w-4 h-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-0.5" aria-hidden="true" />
+                  <span>
+                    Send Message
+                  </span>
+
+                  <Send
+                    className="
+                      h-4
+                      w-4
+                      transition-transform
+                      duration-200
+                      group-hover:translate-x-1
+                      group-hover:-translate-y-0.5
+                    "
+                    aria-hidden="true"
+                  />
                 </>
               )}
             </button>
           </form>
 
-          <AnimatePresence mode="wait">
-            {status === "success" && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                role="status"
-                className="mt-6 p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 flex items-center justify-center gap-3 text-sm font-medium"
+          {/* =================================================
+              SUCCESS MESSAGE
+          ================================================= */}
+
+          {status === "success" && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="
+                mt-6
+                flex
+                origin-top
+                animate-contact-success
+                items-center
+                justify-center
+                gap-3
+                rounded-2xl
+                border
+                border-emerald-500/40
+                bg-emerald-950/60
+                p-4
+                text-sm
+                font-medium
+                text-emerald-300
+              "
+            >
+              <CheckCircle2
+                className="
+                  h-5
+                  w-5
+                  shrink-0
+                  text-emerald-400
+                "
+                aria-hidden="true"
+              />
+
+              <span>
+                Message sent successfully!
+                Thank you. ✨
+              </span>
+            </div>
+          )}
+
+          {/* =================================================
+              DIVIDER
+          ================================================= */}
+
+          <div
+            aria-hidden="true"
+            className="
+              my-10
+              h-px
+              bg-gradient-to-r
+              from-transparent
+              via-emerald-800/40
+              to-transparent
+            "
+          />
+
+          {/* =================================================
+              LOCATION + EMAIL
+          ================================================= */}
+
+          <div
+            className="
+              grid
+              grid-cols-1
+              gap-4
+              sm:grid-cols-2
+            "
+          >
+            {/* LOCATION */}
+
+            <div
+              className="
+                flex
+                items-center
+                gap-4
+                rounded-2xl
+                border
+                border-emerald-900/40
+                bg-[#030d03]
+                p-4
+              "
+            >
+              <div
+                className="
+                  flex
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-emerald-800/50
+                  bg-emerald-950/80
+                  p-3
+                "
               >
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" aria-hidden="true" />
-                <span>Message sent successfully! Thank you. ✨</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="my-10 h-[1px] bg-gradient-to-r from-transparent via-emerald-800/40 to-transparent" />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#030d03]/60 border border-emerald-900/40">
-              <div className="relative flex items-center justify-center p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/50">
-                <span className="absolute inline-flex h-full w-full rounded-xl bg-emerald-400/20 animate-ping opacity-75" aria-hidden="true" />
-                <MapPin className="w-5 h-5 text-emerald-400 relative z-10" aria-hidden="true" />
+                <MapPin
+                  className="
+                    h-5
+                    w-5
+                    text-emerald-400
+                  "
+                  aria-hidden="true"
+                />
               </div>
+
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-500/80 block">Current Location</span>
-                <span className="text-emerald-200 font-semibold text-sm">Kediri, Indonesia</span>
+                <span
+                  className="
+                    block
+                    text-[10px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    text-emerald-500/80
+                  "
+                >
+                  Current Location
+                </span>
+
+                <span
+                  className="
+                    text-sm
+                    font-semibold
+                    text-emerald-200
+                  "
+                >
+                  Kediri, Indonesia
+                </span>
               </div>
             </div>
 
+            {/* EMAIL */}
+
             <a
               href="mailto:nanamaingga12@gmail.com"
-              className="flex items-center justify-between p-4 rounded-2xl bg-[#030d03]/60 border border-emerald-900/40 hover:border-emerald-700/40 transition-all group"
+              aria-label="Send email to Ahmad Nana Maingga"
+              className="
+                group
+                flex
+                items-center
+                justify-between
+                rounded-2xl
+                border
+                border-emerald-900/40
+                bg-[#030d03]
+                p-4
+                transition-[border-color]
+                duration-200
+                hover:border-emerald-700/40
+                focus-visible:outline-none
+                focus-visible:ring-2
+                focus-visible:ring-emerald-400
+                focus-visible:ring-offset-2
+                focus-visible:ring-offset-[#071707]
+              "
             >
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/50 text-emerald-400">
-                  <Mail className="w-5 h-5" aria-hidden="true" />
+              <div
+                className="
+                  flex
+                  min-w-0
+                  items-center
+                  gap-4
+                "
+              >
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-emerald-800/50
+                    bg-emerald-950/80
+                    p-3
+                    text-emerald-400
+                  "
+                >
+                  <Mail
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  />
                 </div>
+
                 <div className="min-w-0">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-500/80 block">Direct Email</span>
-                  <span className="text-emerald-200 font-semibold text-sm truncate block group-hover:text-emerald-400 transition-colors">
+                  <span
+                    className="
+                      block
+                      text-[10px]
+                      font-bold
+                      uppercase
+                      tracking-wider
+                      text-emerald-500/80
+                    "
+                  >
+                    Direct Email
+                  </span>
+
+                  <span
+                    className="
+                      block
+                      truncate
+                      text-sm
+                      font-semibold
+                      text-emerald-200
+                      transition-colors
+                      duration-200
+                      group-hover:text-emerald-400
+                    "
+                  >
                     nanamaingga12@gmail.com
                   </span>
                 </div>
               </div>
-              <ArrowUpRight className="w-4 h-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 shrink-0" aria-hidden="true" />
+
+              <ArrowUpRight
+                className="
+                  h-4
+                  w-4
+                  shrink-0
+                  text-emerald-500
+                  opacity-0
+                  transition-[opacity,transform]
+                  duration-200
+                  group-hover:-translate-y-0.5
+                  group-hover:translate-x-0.5
+                  group-hover:opacity-100
+                "
+                aria-hidden="true"
+              />
             </a>
           </div>
 
-          <div className="mt-8 flex justify-center items-center gap-3">
-            {SOCIAL_LINKS.map((item) => (
-              <SocialButton key={item.name} name={item.name} href={item.href} icon={item.icon} />
+          {/* =================================================
+              SOCIAL LINKS
+          ================================================= */}
+
+          <nav
+            aria-label="Social media links"
+            className="
+              mt-8
+              flex
+              items-center
+              justify-center
+              gap-3
+            "
+          >
+            {SOCIAL_LINKS.map((item, index) => (
+              <div
+                key={item.name}
+                className={`
+                  transition-[opacity,transform]
+                  duration-500
+                  ease-out
+                  motion-reduce:transition-none
+                  ${
+                    isVisible
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-3 opacity-0"
+                  }
+                `}
+                style={{
+                  transitionDelay: isVisible
+                    ? `${500 + index * 70}ms`
+                    : "0ms",
+                }}
+              >
+                <SocialButton
+                  name={item.name}
+                  href={item.href}
+                  icon={item.icon}
+                />
+              </div>
             ))}
-          </div>
+          </nav>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

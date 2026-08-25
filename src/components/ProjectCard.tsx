@@ -14,9 +14,6 @@ export type ProjectCardProps = {
   demo?: string;
 };
 
-const DEFAULT_BLUR_DATA =
-  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='%230b1b0e'/%3E%3C/svg%3E";
-
 const ProjectCard = ({
   title,
   description,
@@ -59,7 +56,6 @@ const ProjectCard = ({
           relative
           h-40
           w-full
-          shrink-0
           overflow-hidden
           border-b
           border-emerald-900/40
@@ -72,10 +68,8 @@ const ProjectCard = ({
           alt={`Screenshot of ${title}`}
           fill
           sizes="(max-width: 640px) 320px, 380px"
-          loading="eager"
+          priority
           quality={65}
-          placeholder="blur"
-          blurDataURL={DEFAULT_BLUR_DATA}
           className="
             object-cover
             transition-transform
@@ -84,6 +78,8 @@ const ProjectCard = ({
             group-hover:scale-[1.02]
           "
         />
+
+        {/* Image Overlay */}
 
         <div
           aria-hidden="true"
@@ -105,6 +101,8 @@ const ProjectCard = ({
       ====================================== */}
 
       <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+        {/* Project Information */}
+
         <div>
           <h3
             id={titleId}
@@ -135,10 +133,12 @@ const ProjectCard = ({
           </p>
         </div>
 
+        {/* ======================================
+            BOTTOM CONTENT
+        ====================================== */}
+
         <div>
-          {/* ==================================
-              TECH STACK
-          ================================== */}
+          {/* Tech Stack */}
 
           <ul
             className="
@@ -174,6 +174,8 @@ const ProjectCard = ({
               sm:mt-4
             "
           >
+            {/* GitHub */}
+
             <a
               href={github}
               target="_blank"
@@ -207,6 +209,8 @@ const ProjectCard = ({
 
               <span>Repository</span>
             </a>
+
+            {/* Live Demo */}
 
             {hasDemo && (
               <a

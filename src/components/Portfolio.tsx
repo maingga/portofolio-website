@@ -5,15 +5,25 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
+  animate,
   motion,
+  useMotionValue,
   useReducedMotion,
+  useTransform,
 } from "framer-motion";
 import ProjectCard, {
   ProjectCardProps,
 } from "./ProjectCard";
+
+/*
+ * ==========================================
+ * PROJECT DATA
+ * ==========================================
+ */
 
 const PROJECTS: readonly ProjectCardProps[] = [
   {
@@ -45,6 +55,16 @@ const PROJECTS: readonly ProjectCardProps[] = [
   },
 ];
 
+/*
+ * ==========================================
+ * CONSTANTS
+ * ==========================================
+ */
+
+const SWIPE_DISTANCE_THRESHOLD = 90;
+const SWIPE_VELOCITY_THRESHOLD = 450;
+const SWIPE_TARGET_X = 430;
+
 const DESKTOP_CONFIG = [
   {
     x: "-102%",
@@ -71,35 +91,126 @@ const DESKTOP_CONFIG = [
 
 const MemoProjectCard = memo(ProjectCard);
 
+/*
+ * ==========================================
+ * COMPONENT
+ * ==========================================
+ */
+
 export default function Portfolio() {
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    PROJECTS.forEach(({ image }) => {
-      const img = new window.Image();
-      img.src = image;
-    });
-  }, []);
-
-  const [mobileIndex, setMobileIndex] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] =
-    useState<-1 | 0 | 1>(0);
-  const [isSpread, setIsSpread] = useState(false);
-  
   /*
    * ==========================================
-   * MOBILE INDEXES
+   * STATE
+   * ==========================================
+   */
+
+  const [mobileIndex, setMobileIndex] = useState(0);
+
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  /*
+   * 1  = swipe LEFT  → NEXT
+   * -1 = swipe RIGHT → PREVIOUS
+   * 0  = idle
+   */
+  const [swipeDirection, setSwipeDirection] =
+    useState<-1 | 0 | 1>(0);
+
+  const [isSpread, setIsSpread] = useState(false);
+
+  /*
+   * ==========================================
+   * REFS
    * ==========================================
    *
-   * current = project yang sedang aktif
+   * State digunakan untuk rendering.
    *
-   * swipe LEFT:
-   * current → next
-   *
-   * swipe RIGHT:
-   * current → previous
+   * Ref digunakan sebagai lock synchronous
+   * supaya startSwipe tidak dapat dijalankan
+   * dua kali sebelum React melakukan re-render.
    */
+
+  const swipeLockRef = useRef(false);
+
+  /*
+   * ==========================================
+   * MOTION VALUE
+   * ==========================================
+   *
+   * Posisi card selama drag menggunakan
+   * MotionValue agar perubahan posisi tidak
+   * menyebabkan React re-render setiap frame.
+   */
+
+  const dragX = useMotionValue(0);
+
+  /*
+   * ==========================================
+   * DRAG ROTATION
+   * ==========================================
+   */
+
+  const dragRotate = useTransform(
+    dragX,
+    [-320, 0, 320],
+    [-6, 0, 6]
+  );
+
+  /*
+   * ==========================================
+   * DRAG OPACITY
+   * ==========================================
+   *
+   * Card tetap terlihat selama sebagian besar
+   * gesture dan baru fade ketika hampir keluar.
+   */
+
+  const dragOpacity = useTransform(
+    dragX,
+    [
+      -SWIPE_TARGET_X,
+      -280,
+      0,
+      280,
+      SWIPE_TARGET_X,
+    ],
+    [0, 1, 1, 1, 0]
+  );
+
+  /*
+   * ==========================================
+   * PRELOAD PROJECT IMAGES
+   * ==========================================
+   *
+   * Hanya 3 image sehingga preload masih
+   * reasonable untuk carousel portfolio ini.
+   */
+
+  useEffect(() => {
+    const images: HTMLImageElement[] = [];
+
+    PROJECTS.forEach(({ image }) => {
+      const img = new window.Image();
+
+      img.decoding = "async";
+      img.src = image;
+
+      images.push(img);
+    });
+
+    return () => {
+      images.length = 0;
+    };
+  }, []);
+
+  /*
+   * ==========================================
+   * MOBILE CARDS
+   * ==========================================
+   */
+
   const mobileCards = useMemo(() => {
     const length = PROJECTS.length;
 
@@ -118,20 +229,9 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * TRANSITIONS
+   * STACK TRANSITION
    * ==========================================
    */
-
-  const cardTransition = reduceMotion
-    ? {
-        duration: 0,
-      }
-    : {
-        type: "spring" as const,
-        stiffness: 280,
-        damping: 30,
-        mass: 0.8,
-      };
 
   const stackTransition = reduceMotion
     ? {
@@ -146,35 +246,121 @@ export default function Portfolio() {
 
   /*
    * ==========================================
-   * FINISH SWIPE
+   * COMPLETE SWIPE
    * ==========================================
    */
 
-  const finishSwipe = useCallback(() => {
-    if (swipeDirection === 1) {
-      /*
-       * LEFT → NEXT
-       */
-      setMobileIndex(
-        (current) =>
-          (current + 1) % PROJECTS.length
-      );
-    }
+  const completeSwipe = useCallback(
+    (direction: -1 | 1) => {
+      setMobileIndex((current) => {
+        if (direction === 1) {
+          /*
+           * LEFT → NEXT
+           */
+          return (
+            (current + 1) %
+            PROJECTS.length
+          );
+        }
 
-    if (swipeDirection === -1) {
-      /*
-       * RIGHT → PREVIOUS
-       */
-      setMobileIndex(
-        (current) =>
+        /*
+         * RIGHT → PREVIOUS
+         */
+        return (
           (current - 1 + PROJECTS.length) %
           PROJECTS.length
-      );
-    }
+        );
+      });
 
-    setSwipeDirection(0);
-    setIsSwiping(false);
-  }, [swipeDirection]);
+      /*
+       * Reset card position sebelum
+       * render berikutnya.
+       */
+      dragX.set(0);
+
+      setSwipeDirection(0);
+      setIsSwiping(false);
+
+      /*
+       * Lepaskan synchronous lock.
+       */
+      swipeLockRef.current = false;
+    },
+    [dragX]
+  );
+
+  /*
+   * ==========================================
+   * START SWIPE
+   * ==========================================
+   */
+
+  const startSwipe = useCallback(
+    async (direction: -1 | 1) => {
+      /*
+       * Jangan izinkan swipe kedua ketika
+       * animasi sebelumnya masih berjalan.
+       *
+       * Menggunakan ref agar lock bersifat
+       * synchronous.
+       */
+      if (swipeLockRef.current) {
+        return;
+      }
+
+      swipeLockRef.current = true;
+
+      setIsSwiping(true);
+      setSwipeDirection(direction);
+
+      /*
+       * LEFT → keluar kiri
+       * RIGHT → keluar kanan
+       */
+      const targetX =
+        direction === 1
+          ? -SWIPE_TARGET_X
+          : SWIPE_TARGET_X;
+
+      /*
+       * Transition khusus untuk card keluar.
+       */
+      const transition = reduceMotion
+        ? {
+            duration: 0,
+          }
+        : {
+            type: "spring" as const,
+            stiffness: 420,
+            damping: 34,
+            mass: 0.65,
+          };
+
+      try {
+        await animate(
+          dragX,
+          targetX,
+          transition
+        );
+
+        completeSwipe(direction);
+      } catch {
+        /*
+         * Safety fallback apabila animation
+         * dibatalkan/error.
+         */
+        dragX.set(0);
+        setSwipeDirection(0);
+        setIsSwiping(false);
+        swipeLockRef.current = false;
+      }
+    },
+    [
+      completeSwipe,
+      dragX,
+      reduceMotion,
+    ]
+  );
 
   /*
    * ==========================================
@@ -183,14 +369,8 @@ export default function Portfolio() {
    */
 
   const nextProject = useCallback(() => {
-    if (isSwiping) return;
-
-    /*
-     * LEFT
-     */
-    setSwipeDirection(1);
-    setIsSwiping(true);
-  }, [isSwiping]);
+    startSwipe(1);
+  }, [startSwipe]);
 
   /*
    * ==========================================
@@ -199,14 +379,8 @@ export default function Portfolio() {
    */
 
   const previousProject = useCallback(() => {
-    if (isSwiping) return;
-
-    /*
-     * RIGHT
-     */
-    setSwipeDirection(-1);
-    setIsSwiping(true);
-  }, [isSwiping]);
+    startSwipe(-1);
+  }, [startSwipe]);
 
   /*
    * ==========================================
@@ -228,73 +402,113 @@ export default function Portfolio() {
         };
       }
     ) => {
-      if (isSwiping) return;
+      /*
+       * Jangan memproses drag jika sedang
+       * dalam programmatic swipe.
+       */
+      if (swipeLockRef.current) {
+        return;
+      }
 
       const distance = info.offset.x;
       const velocity = info.velocity.x;
 
       /*
-       * Sedikit lebih responsif.
+       * ======================================
+       * SWIPE DECISION
+       * ======================================
        */
-      const distanceThreshold = 70;
-      const velocityThreshold = 400;
 
       const shouldSwipe =
         Math.abs(distance) >=
-          distanceThreshold ||
+          SWIPE_DISTANCE_THRESHOLD ||
         Math.abs(velocity) >=
-          velocityThreshold;
+          SWIPE_VELOCITY_THRESHOLD;
 
       /*
-       * Gesture terlalu kecil.
+       * ======================================
+       * NOT ENOUGH SWIPE
+       * ======================================
        *
-       * Framer Motion akan mengembalikan
-       * current card ke posisi semula.
+       * Kembalikan card ke tengah.
        */
+
       if (!shouldSwipe) {
+        const transition = reduceMotion
+          ? {
+              duration: 0,
+            }
+          : {
+              type: "spring" as const,
+              stiffness: 500,
+              damping: 38,
+              mass: 0.6,
+            };
+
+        animate(
+          dragX,
+          0,
+          transition
+        );
+
         return;
       }
 
       /*
+       * ======================================
        * LEFT → NEXT
+       * ======================================
        */
+
       if (
         distance < 0 ||
         velocity < 0
       ) {
-        setSwipeDirection(1);
-        setIsSwiping(true);
+        startSwipe(1);
         return;
       }
 
       /*
+       * ======================================
        * RIGHT → PREVIOUS
+       * ======================================
        */
-      setSwipeDirection(-1);
-      setIsSwiping(true);
+
+      startSwipe(-1);
     },
-    [isSwiping]
+    [
+      dragX,
+      reduceMotion,
+      startSwipe,
+    ]
   );
 
   /*
    * ==========================================
-   * INDICATOR
+   * INDICATOR CLICK
    * ==========================================
    */
 
-  const handleIndicatorClick = useCallback(
-    (index: number) => {
-      if (
-        isSwiping ||
-        index === mobileIndex
-      ) {
-        return;
-      }
+  const handleIndicatorClick =
+    useCallback(
+      (index: number) => {
+        if (
+          swipeLockRef.current ||
+          index === mobileIndex
+        ) {
+          return;
+        }
 
-      setMobileIndex(index);
-    },
-    [isSwiping, mobileIndex]
-  );
+        /*
+         * Pastikan posisi card bersih.
+         */
+        dragX.set(0);
+
+        setSwipeDirection(0);
+        setMobileIndex(index);
+      },
+      [dragX, mobileIndex]
+    );
 
   /*
    * ==========================================
@@ -306,29 +520,34 @@ export default function Portfolio() {
     (
       event: React.KeyboardEvent<HTMLElement>
     ) => {
-      if (isSwiping) return;
+      if (swipeLockRef.current) {
+        return;
+      }
 
+      /*
+       * ArrowLeft → NEXT
+       */
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-
-        setMobileIndex(
-          (current) =>
-            (current + 1) % PROJECTS.length
-        );
+        startSwipe(1);
       }
 
+      /*
+       * ArrowRight → PREVIOUS
+       */
       if (event.key === "ArrowRight") {
         event.preventDefault();
-
-        setMobileIndex(
-          (current) =>
-            (current - 1 + PROJECTS.length) %
-            PROJECTS.length
-        );
+        startSwipe(-1);
       }
     },
-    [isSwiping]
+    [startSwipe]
   );
+
+  /*
+   * ==========================================
+   * RENDER
+   * ==========================================
+   */
 
   return (
     <section
@@ -489,7 +708,6 @@ export default function Portfolio() {
           >
             {/* ==================================
                 PREVIOUS CARD
-                Swipe RIGHT → this card comes forward
             ================================== */}
 
             <motion.div
@@ -544,7 +762,6 @@ export default function Portfolio() {
 
             {/* ==================================
                 NEXT CARD
-                Swipe LEFT → this card comes forward
             ================================== */}
 
             <motion.div
@@ -614,65 +831,23 @@ export default function Portfolio() {
               "
               style={{
                 zIndex: 5,
+                x: dragX,
+                rotate: dragRotate,
+                opacity: dragOpacity,
               }}
               drag={
-                !isSwiping
+                !swipeLockRef.current
                   ? "x"
                   : false
               }
               dragConstraints={{
-                left: -380,
-                right: 380,
+                left: -SWIPE_TARGET_X,
+                right: SWIPE_TARGET_X,
               }}
               dragElastic={0.08}
               dragMomentum={false}
               dragDirectionLock
-              animate={{
-                /*
-                 * LEFT → keluar kiri
-                 */
-                x:
-                  swipeDirection === 1
-                    ? -430
-                    : /*
-                       * RIGHT → keluar kanan
-                       */
-                      swipeDirection === -1
-                      ? 430
-                      : 0,
-
-                y: 0,
-
-                rotate:
-                  swipeDirection === 1
-                    ? -8
-                    : swipeDirection === -1
-                      ? 8
-                      : 0,
-
-                scale: 1,
-
-                opacity:
-                  swipeDirection !== 0
-                    ? 0
-                    : 1,
-              }}
-              transition={
-                swipeDirection !== 0
-                  ? cardTransition
-                  : {
-                      type: "spring",
-                      stiffness: 500,
-                      damping: 35,
-                      mass: 0.6,
-                    }
-              }
               onDragEnd={handleDragEnd}
-              onAnimationComplete={
-                swipeDirection !== 0
-                  ? finishSwipe
-                  : undefined
-              }
             >
               <MemoProjectCard
                 {...mobileCards.current}
@@ -902,7 +1077,7 @@ export default function Portfolio() {
                           duration: 0,
                         }
                       : {
-                          type: "spring",
+                          type: "spring" as const,
                           stiffness: 280,
                           damping: 26,
                           mass: 0.8,

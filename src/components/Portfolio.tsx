@@ -1,7 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { motion } from "framer-motion";
+import {
+  memo,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import ProjectCard, { ProjectCardProps } from "./ProjectCard";
 
 const PROJECTS: readonly ProjectCardProps[] = [
@@ -34,7 +39,7 @@ const PROJECTS: readonly ProjectCardProps[] = [
   },
 ];
 
-const DECK_CONFIG = [
+const DESKTOP_CONFIG = [
   {
     x: "-102%",
     y: 4,
@@ -58,68 +63,191 @@ const DECK_CONFIG = [
   },
 ] as const;
 
+/*
+ * Only the data-heavy card itself is memoized.
+ *
+ * This prevents unnecessary ProjectCard renders when
+ * the parent state changes but the project itself doesn't.
+ */
+const MemoProjectCard = memo(ProjectCard);
+
 export default function Portfolio() {
-  const [isSpread, setIsSpread] = useState(false);
+  const reduceMotion = useReducedMotion();
 
-  const [mobileCards, setMobileCards] =
-    useState<readonly ProjectCardProps[]>(PROJECTS);
+  const [mobileIndex, setMobileIndex] =
+    useState(0);
 
-  const [mobileIndex, setMobileIndex] = useState(0);
+  const [isSwiping, setIsSwiping] =
+    useState(false);
 
-  /*
-   * Mobile swipe
-   */
-  const handleMobileSwipe = useCallback(() => {
-    setMobileCards((prev) => {
-      if (prev.length <= 1) return prev;
+  const [swipeDirection, setSwipeDirection] =
+    useState<-1 | 0 | 1>(0);
 
-      return [
-        ...prev.slice(1),
-        prev[0],
-      ];
-    });
-
-    setMobileIndex((prev) => {
-      return (prev + 1) % PROJECTS.length;
-    });
-  }, []);
+  const [isSpread, setIsSpread] =
+    useState(false);
 
   /*
-   * Mobile indicator
+   * Only calculate the visible mobile cards.
+   *
+   * With 3 projects this is already tiny,
+   * but this approach also scales better if
+   * the portfolio grows later.
    */
-  const handleSelectMobileCard = useCallback(
-    (targetIndex: number) => {
-      const diff =
-        (targetIndex -
-          mobileIndex +
-          PROJECTS.length) %
-        PROJECTS.length;
+  const mobileCards = useMemo(() => {
+    const length = PROJECTS.length;
 
-      if (diff === 0) return;
+    return [
+      PROJECTS[mobileIndex],
+      PROJECTS[(mobileIndex + 1) % length],
+      PROJECTS[(mobileIndex + 2) % length],
+    ];
+  }, [mobileIndex]);
 
-      setMobileCards((prev) => {
-        const result = [...prev];
+  /*
+   * Move to next project.
+   */
+  const nextProject = useCallback(() => {
+    if (isSwiping) return;
 
-        for (let i = 0; i < diff; i++) {
-          const first = result.shift();
+    setSwipeDirection(1);
+    setIsSwiping(true);
+  }, [isSwiping]);
 
-          if (first) {
-            result.push(first);
-          }
-        }
+  /*
+   * Move to previous project.
+   */
+  const previousProject = useCallback(() => {
+    if (isSwiping) return;
 
-        return result;
-      });
+    setSwipeDirection(-1);
+    setIsSwiping(true);
+  }, [isSwiping]);
 
-      setMobileIndex(targetIndex);
+  /*
+   * Finish swipe animation.
+   *
+   * This is called from Framer Motion's
+   * animation completion instead of setTimeout.
+   */
+  const finishSwipe = useCallback(() => {
+    if (swipeDirection === 1) {
+      setMobileIndex(
+        (current) =>
+          (current + 1) % PROJECTS.length
+      );
+    }
+
+    if (swipeDirection === -1) {
+      setMobileIndex(
+        (current) =>
+          (current - 1 + PROJECTS.length) %
+          PROJECTS.length
+      );
+    }
+
+    setSwipeDirection(0);
+    setIsSwiping(false);
+  }, [swipeDirection]);
+
+  /*
+   * Swipe detection.
+   *
+   * Distance OR velocity can trigger the swipe.
+   */
+  const handleDragEnd = useCallback(
+    (
+      _: MouseEvent | TouchEvent | PointerEvent,
+      info: {
+        offset: { x: number; y: number };
+        velocity: { x: number; y: number };
+      }
+    ) => {
+      if (isSwiping) return;
+
+      const distance = info.offset.x;
+      const velocity = info.velocity.x;
+
+      const distanceThreshold = 85;
+      const velocityThreshold = 450;
+
+      const passedThreshold =
+        Math.abs(distance) >
+          distanceThreshold ||
+        Math.abs(velocity) >
+          velocityThreshold;
+
+      if (!passedThreshold) return;
+
+      if (distance < 0 || velocity < 0) {
+        nextProject();
+      } else {
+        previousProject();
+      }
     },
-    [mobileIndex]
+    [
+      isSwiping,
+      nextProject,
+      previousProject,
+    ]
+  );
+
+  /*
+   * Indicator navigation.
+   *
+   * For 3 projects, directly changing the index
+   * is cheaper than running multiple animations.
+   */
+  const handleIndicatorClick = useCallback(
+    (index: number) => {
+      if (isSwiping || index === mobileIndex) {
+        return;
+      }
+
+      setMobileIndex(index);
+    },
+    [isSwiping, mobileIndex]
+  );
+
+  /*
+   * Keyboard support.
+   *
+   * This handler is attached only to the portfolio
+   * section instead of window, reducing global listeners.
+   */
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+
+        if (!isSwiping) {
+          setMobileIndex(
+            (current) =>
+              (current - 1 + PROJECTS.length) %
+              PROJECTS.length
+          );
+        }
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+
+        if (!isSwiping) {
+          setMobileIndex(
+            (current) =>
+              (current + 1) % PROJECTS.length
+          );
+        }
+      }
+    },
+    [isSwiping]
   );
 
   return (
     <section
       id="portfolio"
       aria-labelledby="portfolio-heading"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       className="
         relative
         flex
@@ -132,10 +260,14 @@ export default function Portfolio() {
         px-4
         py-20
         text-white
+        outline-none
         sm:px-6
       "
     >
-      {/* Background glow */}
+      {/* =========================
+          BACKGROUND
+      ========================= */}
+
       <div
         aria-hidden="true"
         className="
@@ -170,7 +302,8 @@ export default function Portfolio() {
       >
         {/* =========================
             HEADER
-            ========================= */}
+        ========================= */}
+
         <div
           className="
             mb-10
@@ -228,18 +361,20 @@ export default function Portfolio() {
             "
           >
             <span className="block sm:hidden">
-              Swipe left/right or tap dots to explore.
+              Swipe left or right to explore.
             </span>
 
             <span className="hidden sm:inline">
-              Hover over the card stack to explore the projects.
+              Hover over the card stack to explore
+              the projects.
             </span>
           </p>
         </div>
 
         {/* =========================
             MOBILE
-            ========================= */}
+        ========================= */}
+
         <div
           className="
             flex
@@ -255,70 +390,117 @@ export default function Portfolio() {
               flex
               h-[460px]
               w-full
-              max-w-[310px]
-              select-none
+              max-w-[320px]
               items-center
               justify-center
+              select-none
+              [touch-action:pan-y]
             "
+            aria-live="polite"
+            aria-atomic="true"
           >
-            {mobileCards.map((project, index) => {
-              const isTopCard = index === 0;
+            {mobileCards.map(
+              (project, index) => {
+                const isTopCard = index === 0;
 
-              /*
-               * Only render visible cards.
-               * This prevents unnecessary DOM/image work.
-               */
-              if (index > 2) {
-                return null;
-              }
-
-              return (
-                <motion.div
-                  key={`mobile-${project.title}`}
-                  className="
-                    absolute
-                    top-0
-                    w-full
-                    touch-none
-                    cursor-grab
-                    active:cursor-grabbing
-                  "
-                  style={{
-                    zIndex: mobileCards.length - index,
-                  }}
-                  drag={isTopCard ? "x" : false}
-                  dragConstraints={{
-                    left: 0,
-                    right: 0,
-                  }}
-                  dragElastic={0.7}
-                  onDragEnd={(_, info) => {
-                    if (Math.abs(info.offset.x) > 70) {
-                      handleMobileSwipe();
+                return (
+                  <motion.div
+                    key={`mobile-${project.title}`}
+                    className="
+                      absolute
+                      top-0
+                      w-full
+                      touch-none
+                      cursor-grab
+                      active:cursor-grabbing
+                      will-change-transform
+                    "
+                    style={{
+                      zIndex: 10 - index,
+                    }}
+                    drag={
+                      isTopCard &&
+                      !isSwiping
+                        ? "x"
+                        : false
                     }
-                  }}
-                  animate={{
-                    scale: 1 - index * 0.04,
-                    y: index * 12,
-                    rotate:
-                      index === 0
+                    dragConstraints={{
+                      left: 0,
+                      right: 0,
+                    }}
+                    dragElastic={0.22}
+                    dragMomentum={false}
+                    dragDirectionLock
+                    onDragEnd={
+                      isTopCard
+                        ? handleDragEnd
+                        : undefined
+                    }
+                    animate={{
+                      x:
+                        isTopCard &&
+                        swipeDirection !== 0
+                          ? swipeDirection * 500
+                          : 0,
+
+                      y: isTopCard
                         ? 0
-                        : index % 2 === 0
-                          ? 3
-                          : -3,
-                  }}
-                  transition={{
-                    duration: 0.22,
-                    ease: "easeOut",
-                  }}
-                >
-                  <ProjectCard {...project} />
-                </motion.div>
-              );
-            })}
+                        : index * 12,
+
+                      scale:
+                        isTopCard
+                          ? 1
+                          : 1 - index * 0.04,
+
+                      rotate:
+                        isTopCard
+                          ? swipeDirection === 1
+                            ? 9
+                            : swipeDirection === -1
+                              ? -9
+                              : 0
+                          : index % 2 === 0
+                            ? 3
+                            : -3,
+
+                      opacity:
+                        isTopCard &&
+                        swipeDirection !== 0
+                          ? 0
+                          : 1,
+                    }}
+                    transition={
+                      reduceMotion
+                        ? {
+                            duration: 0,
+                          }
+                        : {
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 32,
+                            mass: 0.75,
+                          }
+                    }
+                    onAnimationComplete={
+                      isTopCard &&
+                      swipeDirection !== 0
+                        ? finishSwipe
+                        : undefined
+                    }
+                  >
+                    <MemoProjectCard
+                      {...project}
+                    />
+                  </motion.div>
+                );
+              }
+            )}
           </div>
 
-          {/* Indicators */}
+          {/* =========================
+              INDICATOR
+          ========================= */}
+
           <div
             className="
               mt-6
@@ -327,32 +509,38 @@ export default function Portfolio() {
               gap-2
             "
           >
-            {PROJECTS.map((project, index) => (
-              <button
-                key={project.title}
-                type="button"
-                onClick={() =>
-                  handleSelectMobileCard(index)
-                }
-                aria-label={`Go to project ${index + 1}`}
-                aria-current={
-                  index === mobileIndex
-                    ? "true"
-                    : undefined
-                }
-                className={`
-                  h-1.5
-                  rounded-full
-                  transition-[width,background-color]
-                  duration-300
-                  ${
-                    index === mobileIndex
-                      ? "w-6 bg-emerald-400"
-                      : "w-1.5 bg-emerald-800/60"
+            {PROJECTS.map(
+              (project, index) => (
+                <button
+                  key={project.title}
+                  type="button"
+                  onClick={() =>
+                    handleIndicatorClick(
+                      index
+                    )
                   }
-                `}
-              />
-            ))}
+                  disabled={isSwiping}
+                  aria-label={`Go to project ${index + 1}: ${project.title}`}
+                  aria-current={
+                    index === mobileIndex
+                      ? "true"
+                      : undefined
+                  }
+                  className={`
+                    h-1.5
+                    rounded-full
+                    transition-[width,background-color]
+                    duration-200
+                    disabled:cursor-not-allowed
+                    ${
+                      index === mobileIndex
+                        ? "w-6 bg-emerald-400"
+                        : "w-1.5 bg-emerald-800/60"
+                    }
+                  `}
+                />
+              )
+            )}
 
             <span
               className="
@@ -362,14 +550,88 @@ export default function Portfolio() {
                 text-emerald-400/70
               "
             >
-              {mobileIndex + 1} / {PROJECTS.length}
+              {String(
+                mobileIndex + 1
+              ).padStart(2, "0")}{" "}
+              /{" "}
+              {String(
+                PROJECTS.length
+              ).padStart(2, "0")}
             </span>
+          </div>
+
+          {/* =========================
+              MOBILE CONTROLS
+          ========================= */}
+
+          <div
+            className="
+              mt-5
+              flex
+              items-center
+              gap-2
+            "
+          >
+            <button
+              type="button"
+              onClick={previousProject}
+              disabled={isSwiping}
+              aria-label="Previous project"
+              className="
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-emerald-900/60
+                bg-emerald-950/40
+                text-sm
+                text-emerald-300
+                transition
+                hover:border-emerald-600/70
+                hover:bg-emerald-900/50
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
+              ←
+            </button>
+
+            <button
+              type="button"
+              onClick={nextProject}
+              disabled={isSwiping}
+              aria-label="Next project"
+              className="
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-emerald-900/60
+                bg-emerald-950/40
+                text-sm
+                text-emerald-300
+                transition
+                hover:border-emerald-600/70
+                hover:bg-emerald-900/50
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
+              →
+            </button>
           </div>
         </div>
 
         {/* =========================
             DESKTOP
-            ========================= */}
+        ========================= */}
+
         <div
           className="
             relative
@@ -382,59 +644,87 @@ export default function Portfolio() {
             justify-center
             sm:flex
           "
-          onMouseEnter={() => setIsSpread(true)}
-          onMouseLeave={() => setIsSpread(false)}
+          onMouseEnter={() =>
+            setIsSpread(true)
+          }
+          onMouseLeave={() =>
+            setIsSpread(false)
+          }
         >
-          {PROJECTS.map((project, index) => {
-            const config = DECK_CONFIG[index];
+          {PROJECTS.map(
+            (project, index) => {
+              const config =
+                DESKTOP_CONFIG[index];
 
-            return (
-              <div
-                key={`desktop-${project.title}`}
-                className="
-                  absolute
-                  top-0
-                  w-full
-                  cursor-pointer
-                  transition-[transform]
-                  duration-300
-                  ease-out
-                "
-                style={{
-                  zIndex: config.zIndex,
-                  transform: isSpread
-                    ? `translate(${config.x}, ${config.y}px) rotate(${config.rotate}deg) scale(${config.scale})`
-                    : getStackTransform(index),
-                }}
-              >
-                <ProjectCard {...project} />
-              </div>
-            );
-          })}
+              return (
+                <motion.div
+                  key={`desktop-${project.title}`}
+                  className="
+                    absolute
+                    top-0
+                    w-full
+                    will-change-transform
+                  "
+                  style={{
+                    zIndex: config.zIndex,
+                  }}
+                  animate={
+                    isSpread
+                      ? {
+                          x: config.x,
+                          y: config.y,
+                          rotate:
+                            config.rotate,
+                          scale:
+                            config.scale,
+                        }
+                      : {
+                          x:
+                            index === 0
+                              ? "-4%"
+                              : index === 2
+                                ? "4%"
+                                : "0%",
+                          y:
+                            index === 0
+                              ? 0
+                              : index === 1
+                                ? -6
+                                : 4,
+                          rotate:
+                            index === 0
+                              ? -4
+                              : index === 2
+                                ? 4
+                                : 0,
+                          scale:
+                            index === 1
+                              ? 1
+                              : 0.96,
+                        }
+                  }
+                  transition={
+                    reduceMotion
+                      ? {
+                          duration: 0,
+                        }
+                      : {
+                          type: "spring",
+                          stiffness: 280,
+                          damping: 26,
+                          mass: 0.8,
+                        }
+                  }
+                >
+                  <MemoProjectCard
+                    {...project}
+                  />
+                </motion.div>
+              );
+            }
+          )}
         </div>
       </div>
     </section>
   );
-}
-
-/**
- * Desktop stacked position.
- *
- * CSS transform is used instead of Framer Motion
- * because these cards don't require physics or dragging.
- */
-function getStackTransform(index: number): string {
-  switch (index) {
-    case 0:
-      return "translate(-4%, 0) rotate(-4deg) scale(0.96)";
-
-    case 1:
-      return "translate(0, -6px) rotate(0deg) scale(1)";
-
-    case 2:
-      return "translate(4%, 4px) rotate(4deg) scale(0.96)";
-
-    default:
-      return "translate(0, 0) rotate(0deg) scale(1)";
-  }
 }

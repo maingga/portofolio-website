@@ -438,34 +438,31 @@ export default function Portfolio() {
                     }
                     animate={{
                       x:
-                        isTopCard &&
-                        swipeDirection !== 0
-                          ? swipeDirection * 500
+                        isTopCard && swipeDirection !== 0
+                          ? swipeDirection * -500
                           : 0,
 
                       y: isTopCard
                         ? 0
                         : index * 12,
 
-                      scale:
-                        isTopCard
-                          ? 1
-                          : 1 - index * 0.04,
+                      scale: isTopCard
+                        ? 1
+                        : 1 - index * 0.04,
 
                       rotate:
                         isTopCard
                           ? swipeDirection === 1
-                            ? 9
+                            ? -9
                             : swipeDirection === -1
-                              ? -9
+                              ? 9
                               : 0
                           : index % 2 === 0
                             ? 3
                             : -3,
 
                       opacity:
-                        isTopCard &&
-                        swipeDirection !== 0
+                        isTopCard && swipeDirection !== 0
                           ? 0
                           : 1,
                     }}

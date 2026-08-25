@@ -6,8 +6,13 @@ import {
   useMemo,
   useState,
 } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import ProjectCard, { ProjectCardProps } from "./ProjectCard";
+import {
+  motion,
+  useReducedMotion,
+} from "framer-motion";
+import ProjectCard, {
+  ProjectCardProps,
+} from "./ProjectCard";
 
 const PROJECTS: readonly ProjectCardProps[] = [
   {
@@ -63,35 +68,24 @@ const DESKTOP_CONFIG = [
   },
 ] as const;
 
-/*
- * Only the data-heavy card itself is memoized.
- *
- * This prevents unnecessary ProjectCard renders when
- * the parent state changes but the project itself doesn't.
- */
 const MemoProjectCard = memo(ProjectCard);
 
 export default function Portfolio() {
   const reduceMotion = useReducedMotion();
 
-  const [mobileIndex, setMobileIndex] =
-    useState(0);
-
-  const [isSwiping, setIsSwiping] =
-    useState(false);
-
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
   const [swipeDirection, setSwipeDirection] =
     useState<-1 | 0 | 1>(0);
-
-  const [isSpread, setIsSpread] =
-    useState(false);
+  const [isSpread, setIsSpread] = useState(false);
 
   /*
-   * Only calculate the visible mobile cards.
+   * ==========================================
+   * MOBILE CARDS
+   * ==========================================
    *
-   * With 3 projects this is already tiny,
-   * but this approach also scales better if
-   * the portfolio grows later.
+   * We only render the current card and the
+   * next two cards.
    */
   const mobileCards = useMemo(() => {
     const length = PROJECTS.length;
@@ -104,30 +98,9 @@ export default function Portfolio() {
   }, [mobileIndex]);
 
   /*
-   * Move to next project.
-   */
-  const nextProject = useCallback(() => {
-    if (isSwiping) return;
-
-    setSwipeDirection(1);
-    setIsSwiping(true);
-  }, [isSwiping]);
-
-  /*
-   * Move to previous project.
-   */
-  const previousProject = useCallback(() => {
-    if (isSwiping) return;
-
-    setSwipeDirection(-1);
-    setIsSwiping(true);
-  }, [isSwiping]);
-
-  /*
-   * Finish swipe animation.
-   *
-   * This is called from Framer Motion's
-   * animation completion instead of setTimeout.
+   * ==========================================
+   * FINISH SWIPE
+   * ==========================================
    */
   const finishSwipe = useCallback(() => {
     if (swipeDirection === 1) {
@@ -150,16 +123,50 @@ export default function Portfolio() {
   }, [swipeDirection]);
 
   /*
-   * Swipe detection.
+   * ==========================================
+   * NEXT PROJECT
+   * ==========================================
+   */
+  const nextProject = useCallback(() => {
+    if (isSwiping) return;
+
+    setSwipeDirection(1);
+    setIsSwiping(true);
+  }, [isSwiping]);
+
+  /*
+   * ==========================================
+   * PREVIOUS PROJECT
+   * ==========================================
+   */
+  const previousProject = useCallback(() => {
+    if (isSwiping) return;
+
+    setSwipeDirection(-1);
+    setIsSwiping(true);
+  }, [isSwiping]);
+
+  /*
+   * ==========================================
+   * DRAG END
+   * ==========================================
    *
-   * Distance OR velocity can trigger the swipe.
+   * The card follows the finger during the drag.
+   * Only after release do we decide whether
+   * the card should leave or return.
    */
   const handleDragEnd = useCallback(
     (
       _: MouseEvent | TouchEvent | PointerEvent,
       info: {
-        offset: { x: number; y: number };
-        velocity: { x: number; y: number };
+        offset: {
+          x: number;
+          y: number;
+        };
+        velocity: {
+          x: number;
+          y: number;
+        };
       }
     ) => {
       if (isSwiping) return;
@@ -167,39 +174,50 @@ export default function Portfolio() {
       const distance = info.offset.x;
       const velocity = info.velocity.x;
 
-      const distanceThreshold = 85;
-      const velocityThreshold = 450;
+      const distanceThreshold = 90;
+      const velocityThreshold = 500;
 
-      const passedThreshold =
-        Math.abs(distance) >
+      const shouldSwipe =
+        Math.abs(distance) >=
           distanceThreshold ||
-        Math.abs(velocity) >
+        Math.abs(velocity) >=
           velocityThreshold;
 
-      if (!passedThreshold) return;
+      /*
+       * Not enough movement:
+       * Framer Motion will naturally animate
+       * the card back to the center.
+       */
+      if (!shouldSwipe) {
+        return;
+      }
 
+      /*
+       * Negative X = swipe left = next.
+       * Positive X = swipe right = previous.
+       */
       if (distance < 0 || velocity < 0) {
-        nextProject();
+        setSwipeDirection(1);
+        setIsSwiping(true);
       } else {
-        previousProject();
+        setSwipeDirection(-1);
+        setIsSwiping(true);
       }
     },
-    [
-      isSwiping,
-      nextProject,
-      previousProject,
-    ]
+    [isSwiping]
   );
 
   /*
-   * Indicator navigation.
-   *
-   * For 3 projects, directly changing the index
-   * is cheaper than running multiple animations.
+   * ==========================================
+   * INDICATOR
+   * ==========================================
    */
   const handleIndicatorClick = useCallback(
     (index: number) => {
-      if (isSwiping || index === mobileIndex) {
+      if (
+        isSwiping ||
+        index === mobileIndex
+      ) {
         return;
       }
 
@@ -209,38 +227,72 @@ export default function Portfolio() {
   );
 
   /*
-   * Keyboard support.
-   *
-   * This handler is attached only to the portfolio
-   * section instead of window, reducing global listeners.
+   * ==========================================
+   * KEYBOARD
+   * ==========================================
    */
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
+      if (isSwiping) return;
+
       if (event.key === "ArrowLeft") {
         event.preventDefault();
 
-        if (!isSwiping) {
-          setMobileIndex(
-            (current) =>
-              (current - 1 + PROJECTS.length) %
-              PROJECTS.length
-          );
-        }
+        setMobileIndex(
+          (current) =>
+            (current - 1 + PROJECTS.length) %
+            PROJECTS.length
+        );
       }
 
       if (event.key === "ArrowRight") {
         event.preventDefault();
 
-        if (!isSwiping) {
-          setMobileIndex(
-            (current) =>
-              (current + 1) % PROJECTS.length
-          );
-        }
+        setMobileIndex(
+          (current) =>
+            (current + 1) % PROJECTS.length
+        );
       }
     },
     [isSwiping]
   );
+
+  /*
+   * ==========================================
+   * MOBILE SWIPE TRANSITION
+   * ==========================================
+   *
+   * Tween is intentionally used here instead
+   * of an aggressive spring.
+   *
+   * This makes the card feel like it has
+   * momentum instead of snapping.
+   */
+  const swipeTransition = reduceMotion
+    ? {
+        duration: 0,
+      }
+    : {
+        type: "tween" as const,
+        duration: 0.28,
+        ease: [0.22, 1, 0.36, 1] as const,
+      };
+
+  /*
+   * ==========================================
+   * MOBILE STACK TRANSITION
+   * ==========================================
+   */
+  const stackTransition = reduceMotion
+    ? {
+        duration: 0,
+      }
+    : {
+        type: "spring" as const,
+        stiffness: 260,
+        damping: 28,
+        mass: 0.8,
+      };
 
   return (
     <section
@@ -264,9 +316,9 @@ export default function Portfolio() {
         sm:px-6
       "
     >
-      {/* =========================
+      {/* ======================================
           BACKGROUND
-      ========================= */}
+      ====================================== */}
 
       <div
         aria-hidden="true"
@@ -300,9 +352,9 @@ export default function Portfolio() {
           items-center
         "
       >
-        {/* =========================
+        {/* ======================================
             HEADER
-        ========================= */}
+        ====================================== */}
 
         <div
           className="
@@ -371,9 +423,9 @@ export default function Portfolio() {
           </p>
         </div>
 
-        {/* =========================
+        {/* ======================================
             MOBILE
-        ========================= */}
+        ====================================== */}
 
         <div
           className="
@@ -401,7 +453,79 @@ export default function Portfolio() {
           >
             {mobileCards.map(
               (project, index) => {
-                const isTopCard = index === 0;
+                const isTopCard =
+                  index === 0;
+
+                /*
+                 * ==================================
+                 * TOP CARD
+                 * ==================================
+                 *
+                 * Before swipe:
+                 * x = 0
+                 *
+                 * During drag:
+                 * Framer Motion controls x.
+                 *
+                 * After threshold:
+                 * animate x to +/- 450px.
+                 */
+                const topCardAnimation =
+                  isTopCard
+                    ? {
+                        x:
+                          swipeDirection === 1
+                            ? -450
+                            : swipeDirection === -1
+                              ? 450
+                              : 0,
+
+                        y: 0,
+
+                        rotate:
+                          swipeDirection === 1
+                            ? -8
+                            : swipeDirection === -1
+                              ? 8
+                              : 0,
+
+                        scale: 1,
+
+                        opacity:
+                          swipeDirection !== 0
+                            ? 0
+                            : 1,
+                      }
+                    : {
+                        /*
+                         * When the front card leaves,
+                         * the second card smoothly moves
+                         * into the front position.
+                         */
+                        x: 0,
+
+                        y:
+                          isSwiping && index === 1
+                            ? 0
+                            : index * 12,
+
+                        rotate:
+                          isSwiping &&
+                          index === 1
+                            ? 0
+                            : index % 2 === 0
+                              ? 3
+                              : -3,
+
+                        scale:
+                          isSwiping &&
+                          index === 1
+                            ? 1
+                            : 1 -
+                              index * 0.04,
+
+                        opacity: 1,
+                      };
 
                 return (
                   <motion.div
@@ -416,67 +540,59 @@ export default function Portfolio() {
                       will-change-transform
                     "
                     style={{
-                      zIndex: 10 - index,
+                      zIndex:
+                        10 - index,
                     }}
+                    /*
+                     * Only the top card can be dragged.
+                     */
                     drag={
                       isTopCard &&
                       !isSwiping
                         ? "x"
                         : false
                     }
+                    /*
+                     * Allow the user to actually
+                     * move the card.
+                     *
+                     * This is one of the biggest
+                     * differences from the old version.
+                     */
                     dragConstraints={{
-                      left: 0,
-                      right: 0,
+                      left: -380,
+                      right: 380,
                     }}
-                    dragElastic={0.22}
+                    /*
+                     * Small elastic effect when
+                     * reaching the edge.
+                     */
+                    dragElastic={0.12}
+                    /*
+                     * Prevent momentum from continuing
+                     * after the finger is released.
+                     */
                     dragMomentum={false}
+                    /*
+                     * Lock movement to horizontal axis.
+                     */
                     dragDirectionLock
+                    /*
+                     * Animate from the CURRENT drag
+                     * position rather than making
+                     * the card suddenly jump.
+                     */
+                    animate={topCardAnimation}
+                    transition={
+                      isTopCard &&
+                      swipeDirection !== 0
+                        ? swipeTransition
+                        : stackTransition
+                    }
                     onDragEnd={
                       isTopCard
                         ? handleDragEnd
                         : undefined
-                    }
-                    animate={{
-                      x:
-                        isTopCard && swipeDirection !== 0
-                          ? swipeDirection * -500
-                          : 0,
-
-                      y: isTopCard
-                        ? 0
-                        : index * 12,
-
-                      scale: isTopCard
-                        ? 1
-                        : 1 - index * 0.04,
-
-                      rotate:
-                        isTopCard
-                          ? swipeDirection === 1
-                            ? -9
-                            : swipeDirection === -1
-                              ? 9
-                              : 0
-                          : index % 2 === 0
-                            ? 3
-                            : -3,
-
-                      opacity:
-                        isTopCard && swipeDirection !== 0
-                          ? 0
-                          : 1,
-                    }}
-                    transition={
-                      reduceMotion
-                        ? {
-                            duration: 0,
-                          }
-                        : {
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 32,
-                            mass: 0.75,
-                          }
                     }
                     onAnimationComplete={
                       isTopCard &&
@@ -494,9 +610,9 @@ export default function Portfolio() {
             )}
           </div>
 
-          {/* =========================
+          {/* ======================================
               INDICATOR
-          ========================= */}
+          ====================================== */}
 
           <div
             className="
@@ -517,7 +633,9 @@ export default function Portfolio() {
                     )
                   }
                   disabled={isSwiping}
-                  aria-label={`Go to project ${index + 1}: ${project.title}`}
+                  aria-label={`Go to project ${
+                    index + 1
+                  }: ${project.title}`}
                   aria-current={
                     index === mobileIndex
                       ? "true"
@@ -557,9 +675,9 @@ export default function Portfolio() {
             </span>
           </div>
 
-          {/* =========================
+          {/* ======================================
               MOBILE CONTROLS
-          ========================= */}
+          ====================================== */}
 
           <div
             className="
@@ -569,33 +687,7 @@ export default function Portfolio() {
               gap-2
             "
           >
-            <button
-              type="button"
-              onClick={previousProject}
-              disabled={isSwiping}
-              aria-label="Previous project"
-              className="
-                flex
-                h-9
-                w-9
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-emerald-900/60
-                bg-emerald-950/40
-                text-sm
-                text-emerald-300
-                transition
-                hover:border-emerald-600/70
-                hover:bg-emerald-900/50
-                disabled:cursor-not-allowed
-                disabled:opacity-40
-              "
-            >
-              ←
-            </button>
-
+            {/* LEFT → NEXT */}
             <button
               type="button"
               onClick={nextProject}
@@ -620,14 +712,42 @@ export default function Portfolio() {
                 disabled:opacity-40
               "
             >
+              ←
+            </button>
+
+            {/* RIGHT → PREVIOUS */}
+            <button
+              type="button"
+              onClick={previousProject}
+              disabled={isSwiping}
+              aria-label="Previous project"
+              className="
+                flex
+                h-9
+                w-9
+                items-center
+                justify-center
+                rounded-full
+                border
+                border-emerald-900/60
+                bg-emerald-950/40
+                text-sm
+                text-emerald-300
+                transition
+                hover:border-emerald-600/70
+                hover:bg-emerald-900/50
+                disabled:cursor-not-allowed
+                disabled:opacity-40
+              "
+            >
               →
             </button>
           </div>
         </div>
 
-        {/* =========================
+        {/* ======================================
             DESKTOP
-        ========================= */}
+        ====================================== */}
 
         <div
           className="
@@ -663,7 +783,8 @@ export default function Portfolio() {
                     will-change-transform
                   "
                   style={{
-                    zIndex: config.zIndex,
+                    zIndex:
+                      config.zIndex,
                   }}
                   animate={
                     isSpread
@@ -682,18 +803,21 @@ export default function Portfolio() {
                               : index === 2
                                 ? "4%"
                                 : "0%",
+
                           y:
                             index === 0
                               ? 0
                               : index === 1
                                 ? -6
                                 : 4,
+
                           rotate:
                             index === 0
                               ? -4
                               : index === 2
                                 ? 4
                                 : 0,
+
                           scale:
                             index === 1
                               ? 1

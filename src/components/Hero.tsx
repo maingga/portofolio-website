@@ -173,7 +173,7 @@ const Hero = () => {
               animate={{ rotateY: isFlipped ? 180 : 0 }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
-              {/* FRONT: Avatar */}
+              {/* FRONT: Avatar (Diset priority karena menjadi elemen utama LCP) */}
               <div className="absolute inset-0 rounded-full [backface-visibility:hidden] overflow-hidden border-4 border-green-500 shadow-lg">
                 <Image
                   src="/profile.webp"
@@ -185,14 +185,13 @@ const Hero = () => {
                 />
               </div>
 
-              {/* BACK: Real Profile (Ditambahkan priority={true} agar peringatan LCP hilang) */}
+              {/* BACK: Real Profile (Priority dihapus untuk efisiensi loading) */}
               <div className="absolute inset-0 rounded-full [backface-visibility:hidden] [transform:rotateY(180deg)] overflow-hidden border-4 border-green-600 shadow-lg">
                 <Image
                   src="/profile-real.webp"
                   alt="Ahmad Nana Real Profile"
                   fill
                   sizes="(max-width: 640px) 220px, (max-width: 768px) 280px, 300px"
-                  priority
                   className="object-cover"
                 />
               </div>

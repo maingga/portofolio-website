@@ -147,7 +147,7 @@ useEffect(() => {
             md:text-5xl
           "
         >
-          Hi, I&apos;s{" "}
+          Hi, I&apos;m{" "}
           <span
             className="
               glow-green

@@ -1,19 +1,12 @@
 @import "tailwindcss";
 
 /* =========================================================
-   ROOT
+   ROOT (Mengunci Tema Gelap Secara Global)
 ========================================================= */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0a0a0a; /* Default langsung hitam/gelap */
+  --foreground: #ededed;
 }
 
 /* =========================================================
@@ -22,12 +15,15 @@
 
 html {
   scroll-behavior: smooth;
+  background-color: #0a0a0a; /* Memastikan canvas browser ikut hitam */
+  color: #ededed;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: inherit;
+  min-height: 100vh;
 }
 
 /* =========================================================
@@ -191,8 +187,6 @@ body {
 
 /* =========================================================
    CONTACT BACKGROUND GLOW
-   Only transform is animated.
-   No permanent will-change to reduce memory/compositing cost.
 ========================================================= */
 
 @keyframes contact-glow {

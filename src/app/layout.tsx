@@ -32,9 +32,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${inter.variable} ${audiowide.variable}`}>
+    <html lang="id" className={`dark ${inter.variable} ${audiowide.variable}`}>
       <body
-        className="min-h-screen bg-[#0f0f0f] text-white flex flex-col"
+        className="min-h-screen bg-[#0a0a0a] text-white flex flex-col"
         style={{ fontFamily: "var(--font-inter)" }}
       >
         <TooltipProvider>

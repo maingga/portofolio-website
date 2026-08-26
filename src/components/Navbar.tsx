@@ -76,9 +76,9 @@ export default function Navbar() {
             className="relative flex items-center gap-2 font-bold text-xl tracking-tight text-emerald-400 font-audiowide"
             style={{ fontFamily: "var(--font-audiowide)" }}
           >
-            <span className="glitch glow-green" data-text="Maingga">
-              Maingga
-            </span>
+          <span className="glitch glow-green drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]" data-text="Maingga">
+            Maingga
+          </span>            
           </motion.div>
 
           {/* Desktop Menu */}

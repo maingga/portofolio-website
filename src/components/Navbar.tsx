@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Menu, X, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,30 +15,25 @@ export default function Navbar() {
   const [scrollDir, setScrollDir] = useState<"up" | "down">("up");
   const activeId = useScrollSpy(SECTION_IDS as unknown as string[], 80);
 
-  // Optimasi: Gunakan useCallback agar referensi fungsi onScroll stabil
-  const handleScroll = useCallback(() => {
-    let lastY = window.scrollY;
-
-    return () => {
-      const currentY = window.scrollY;
-      
-      setShowTopButton(currentY > 300);
-
-      // Hanya update scroll dir jika perbedaan scroll > 10px untuk menghemat re-render
-      if (Math.abs(currentY - lastY) > 10) {
-        setScrollDir(currentY > lastY && currentY > 80 ? "down" : "up");
-        lastY = currentY;
-      }
-    };
-  }, []);
+  // Menggunakan useRef agar nilai lastY tersimpan stabil tanpa memicu re-render berlebih
+  const lastYRef = useRef(0);
 
   useEffect(() => {
-    const onScroll = handleScroll();
+    const onScroll = () => {
+      const currentY = window.scrollY;
+
+      setShowTopButton(currentY > 300);
+
+      if (Math.abs(currentY - lastYRef.current) > 10) {
+        setScrollDir(currentY > lastYRef.current && currentY > 80 ? "down" : "up");
+        lastYRef.current = currentY;
+      }
+    };
+
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [handleScroll]);
+  }, []);
 
-  // Handler untuk menutup menu mobile dan scroll mulus
   const handleNavLinkClick = useCallback(() => {
     setMenuOpen(false);
   }, []);
@@ -73,7 +68,7 @@ export default function Navbar() {
           className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center"
           aria-label="Main Navigation"
         >
-          {/* Logo */}
+          {/* Logo dengan gabungan class Glitch + Glow Green */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -81,7 +76,7 @@ export default function Navbar() {
             className="relative flex items-center gap-2 font-bold text-xl tracking-tight text-emerald-400 font-audiowide"
             style={{ fontFamily: "var(--font-audiowide)" }}
           >
-            <span className="glitch" data-text="Maingga">
+            <span className="glitch glow-green" data-text="Maingga">
               Maingga
             </span>
           </motion.div>
